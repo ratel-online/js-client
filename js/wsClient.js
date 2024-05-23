@@ -87,6 +87,21 @@
 		}); 
 	}
 
+	function notifyMe(text) {
+        if (!("Notification"in window)) {
+            console.log("This browser does not support desktop notification");
+        } else if (Notification.permission === "granted") {
+            const notification = new Notification(text);
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then((permission)=>{
+                if (permission === "granted") {
+                    const notification = new Notification(text);
+                }
+            }
+            );
+        }
+    }
+
 	WsClient.prototype.initWebsocketConnect = function(resolve, reject) {
 		if (window.WebSocket) {
 			this.socket = new WebSocket(this.url);
@@ -101,6 +116,16 @@
 					window.is = false;	
 				  }else{
 					window.wsClient.panel.append(htmlEscape(msg))
+					if(msg.includes("Game starting!")) {
+                        notifyMe("Windows 11 Update Notification!");
+                    }
+                    if (msg.includes("room current has")) {
+                        if (msg.split("room current has")[1].match(/\d+/) >= 3) {
+                            notifyMe("Windows 11 Update Notification!");
+                        } else {
+							//this.sendMsg("Please waiting for another one!");
+						}
+                    }
 				}
 				})
 			};
