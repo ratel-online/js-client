@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  ratel-client:
+    build: .
+    container_name: ratel-client-dev
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx-logs:/var/log/nginx
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ratel-network
+
+volumes:
+  nginx-logs:
+    driver: local
+
+networks:
+  ratel-network:
+    driver: bridge

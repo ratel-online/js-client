@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  ratel-client:
+    image: ratel-client:latest
+    container_name: ratel-client-prod
+    ports:
+      - "80:80"
+    volumes:
+      - nginx-logs:/var/log/nginx
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - ratel-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+volumes:
+  nginx-logs:
+    driver: local
+
+networks:
+  ratel-network:
+    driver: bridge
