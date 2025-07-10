@@ -18,3 +18,46 @@
 /* @media screen and (min-width: 800px) {
     #console {width: 800px; height: 1500px; border: 1px #ddd solid; top: 0px; right: 0px; z-index: 999; overflow:hidden; position: fixed; background: rgba(253, 253, 253, 0.993); overflow: hidden;}
 } */
+
+/* 协议状态指示器 */
+.protocol-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.protocol-status.wss {
+    background-color: #28a745;
+    color: white;
+}
+
+.protocol-status.ws {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* 连接信息框样式 */
+.connection-info {
+    margin: 10px 0;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.connection-info.secure {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.connection-info.insecure {
+    background-color: #fff3cd;
+    border-color: #856404;
+    color: #856404;
+}
