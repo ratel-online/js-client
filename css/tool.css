@@ -35,3 +35,55 @@ pre {font-family: monospace}
 .console-box, .message-box {display: block;overflow: auto;padding: 1rem}
 
 .console-box {max-height: calc(100vh - 640px)}
+
+/* WebSocket 协议类型显示样式 */
+.protocol-indicator {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.protocol-wss {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.protocol-ws {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.alert-success .fa-lock {
+    color: #155724;
+    margin-right: 5px;
+}
+
+.alert-warning .fa-unlock-alt {
+    color: #856404;
+    margin-right: 5px;
+}
+
+/* 连接状态指示器 */
+.connection-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.connection-status.secure {
+    background-color: #28a745;
+    color: white;
+}
+
+.connection-status.insecure {
+    background-color: #ffc107;
+    color: #212529;
+}

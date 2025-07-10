@@ -1,0 +1,11 @@
+# 排除所有nginx配置文件，只保留我们需要的
+nginx-*.conf
+*nginx*.conf
+!nginx.conf
+Dockerfile
+docker-compose.yml
+docker-compose.prod.yml
+Makefile
+README.md
+.git
+.gitignore 

@@ -9,7 +9,7 @@ var Vm = new Vue({
         consoleData: [], // 控制台日志
         messageData: [], // 消息记录
         instance: WebSocket, // ws instance
-        address: 'ws://192.252.182.94:9998/ws', // 链接地址
+        address: window.RatelConfig && window.RatelConfig.wsAddress ? window.RatelConfig.wsAddress : 'ws://ratel-be.youdomain.com/ws', // 链接地址
         nickname: 'luke',
         alert: {
             class: 'success',
@@ -32,12 +32,34 @@ var Vm = new Vue({
         is: true,
         showNotification: false
     },
-    created: function created () {
+    created: function created() {
         this.canUseH5WebSocket()
-        var address = localStorage.getItem('address');
-        if (typeof address === 'string') this.address = address
+        
+        // 优先使用配置文件中的地址
+        if (window.RatelConfig && window.RatelConfig.wsAddress) {
+            this.address = window.RatelConfig.wsAddress;
+            console.log("使用配置的 WebSocket 地址:", this.address);
+        } else {
+            // 从 localStorage 获取保存的地址
+            var savedAddress = localStorage.getItem('address');
+            if (typeof savedAddress === 'string') {
+                this.address = savedAddress;
+                console.log("使用保存的 WebSocket 地址:", this.address);
+            }
+        }
+        
         window.onerror = function (ev) {
             console.warn(ev)
+        }
+        // 更新页面标题
+        this.updatePageTitle();
+    },
+    computed: {
+        isHttps: function () {
+            return window.location.protocol === 'https:';
+        },
+        isSecureWebSocket: function () {
+            return this.address.startsWith('wss://');
         }
     },
     filters: {
@@ -45,7 +67,7 @@ var Vm = new Vue({
             switch (value) {
                 case undefined:
                     return '尚未创建'
-                case 0 :
+                case 0:
                     return '尚未开启'
                 case 1:
                     return '连接成功'
@@ -57,23 +79,39 @@ var Vm = new Vue({
         }
     },
     methods: {
-        showTips: function showTips (className, content) {
+        updatePageTitle: function () {
+            var protocol = '';
+            if (this.address.startsWith('wss://')) {
+                protocol = ' [🔒 WSS]';
+            } else if (this.address.startsWith('ws://')) {
+                protocol = ' [⚠️ WS]';
+            }
+            document.title = 'WebSocket 测试工具' + protocol;
+        },
+        showTips: function showTips(className, content) {
             clearTimeout(this.alert.timer);
-            this.alert.state   = false;
-            this.alert.class   = className;
+            this.alert.state = false;
+            this.alert.class = className;
             this.alert.content = content;
-            this.alert.state   = true;
-            this.alert.timer   = setTimeout(function () {
+            this.alert.state = true;
+            this.alert.timer = setTimeout(function () {
                 Vm.alert.state = false;
             }, 3000);
         },
         autoWsConnect: function () {
             try {
-                if (this.connected === false){
-                    localStorage.setItem('address', this.address)
+                if (this.connected === false) {
+                    // 如果不是使用配置文件的地址，则保存到 localStorage
+                    var configuredAddress = window.RatelConfig && window.RatelConfig.wsAddress;
+                    if (!configuredAddress || this.address !== configuredAddress) {
+                        localStorage.setItem('address', this.address);
+                    }
+                    
+                    // 更新页面标题
+                    this.updatePageTitle();
                     var nickname = this.nickname;
                     var wsInstance = new WebSocket(this.address);
-                    var _this      = Vm;
+                    var _this = Vm;
                     if (!nickname) {
                         _this.writeConsole('danger', 'Nickname不能为空');
                         return;
@@ -82,11 +120,19 @@ var Vm = new Vue({
                         _this.writeConsole('danger', 'Nickname不能超出10个字符');
                         return;
                     }
-                    wsInstance.onopen    = function (ev) {
+                    // 在连接前显示协议信息
+                    var isSecure = this.address.startsWith('wss://');
+                    var protocolInfo = isSecure ?
+                        '🔒 使用安全加密连接 (WSS)' :
+                        '⚠️ 使用非加密连接 (WS)';
+                    _this.writeConsole('info', '正在连接: ' + this.address);
+                    _this.writeConsole('info', protocolInfo);
+
+                    wsInstance.onopen = function (ev) {
                         console.warn(ev)
                         _this.connected = true
-                        var service     = _this.instance.url.replace('ws://', '').replace('wss://', '');
-                        service         = (service.substring(service.length - 1) === '/') ? service.substring(0, service.length - 1) : service;
+                        var service = _this.instance.url.replace('ws://', '').replace('wss://', '');
+                        service = (service.substring(service.length - 1) === '/') ? service.substring(0, service.length - 1) : service;
                         _this.instance.send(JSON.stringify({
                             data: JSON.stringify({
                                 ID: new Date().getTime(),
@@ -94,16 +140,20 @@ var Vm = new Vue({
                                 Score: 100
                             })
                         }));
-                        _this.writeAlert('success', 'Connect to ' + service.toString());
+                        // 明确显示协议类型
+                        var isSecure = _this.instance.url.startsWith('wss://');
+                        var protocol = isSecure ? 'WSS (安全连接)' : 'WS (非安全连接)';
+                        var protocolIcon = isSecure ? '🔒' : '⚠️';
+                        _this.writeAlert('success', protocolIcon + ' Connected to ' + service.toString() + ' via ' + protocol);
                     }
-                    wsInstance.onclose   = function (ev) {
+                    wsInstance.onclose = function (ev) {
                         console.warn(ev)
                         _this.autoSend = false;
                         clearInterval(_this.autoTimer);
                         _this.connected = false;
                         _this.writeAlert('danger', 'CLOSED => ' + _this.closeCode(ev.code));
                     }
-                    wsInstance.onerror   = function (ev) {
+                    wsInstance.onerror = function (ev) {
                         console.warn(ev)
                         _this.writeConsole('danger', '发生错误 请打开浏览器控制台查看')
                     }
@@ -117,11 +167,11 @@ var Vm = new Vue({
                                 // if (_this.recvClean) _this.messageData = [];
                                 if (msg === 'INTERACTIVE_SIGNAL_START') {
                                     _this.is = true;
-                                } else if(msg === 'INTERACTIVE_SIGNAL_STOP'){
+                                } else if (msg === 'INTERACTIVE_SIGNAL_STOP') {
                                     _this.is = false;
-                                } else if(msg.includes("say:")) {
+                                } else if (msg.includes("say:")) {
                                     _this.writeConsole('success', msg)
-                                } else if(msg.includes("joined room!")) {
+                                } else if (msg.includes("joined room!")) {
                                     // 检查浏览器是否支持Notification API
                                     if (_this.showNotification) {
                                         // 如果已经授权，或用户同意，则创建一个新的通知
@@ -142,8 +192,8 @@ var Vm = new Vue({
                         })
 
                     }
-                    this.instance        = wsInstance;
-                }else {
+                    this.instance = wsInstance;
+                } else {
                     this.instance.close(1000, 'Active closure of the user')
                 }
             } catch (err) {
@@ -157,7 +207,7 @@ var Vm = new Vue({
                 _this.autoSend = false;
                 clearInterval(_this.autoTimer);
             } else {
-                _this.autoSend  = true
+                _this.autoSend = true
                 _this.autoTimer = setInterval(function () {
                     _this.writeConsole('info', '循环发送: ' + _this.heartBeatContent)
                     _this.sendData(_this.heartBeatContent);
@@ -230,7 +280,7 @@ var Vm = new Vue({
         },
         sendData: function (raw) {
             var _this = Vm
-            var data  = raw
+            var data = raw
             if (typeof data === 'object') {
                 data = _this.content
             }
@@ -242,7 +292,7 @@ var Vm = new Vue({
                 if (!_this.is) {
                     data = '~ ' + data;
                 }
-                _this.instance.send(JSON.stringify({data: data}));
+                _this.instance.send(JSON.stringify({ data: data }));
                 _this.writeNews(1, data);
                 if (_this.sendClean && typeof raw === 'object') _this.content = '';
             } catch (err) {
@@ -250,7 +300,7 @@ var Vm = new Vue({
                 throw err;
             }
         },
-        scrollOver: function scrollOver (e) {
+        scrollOver: function scrollOver(e) {
             if (e) {
                 e.scrollTop = e.scrollHeight;
             }
