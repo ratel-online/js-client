@@ -46,6 +46,16 @@
                                     <div class="col-sm-12">
                                         <h5 class="card-title">服务器配置 状态: {{ instance.readyState | rStatus }}</h5>
                                         <hr class="divider divider-dashed">
+                                        <!-- 协议类型显示 -->
+                                        <div class="card-text mb-2" v-if="address">
+                                            <div class="alert" :class="address.startsWith('wss://') ? 'alert-success' : 'alert-warning'" style="padding: 0.5rem;">
+                                                <i class="fa" :class="address.startsWith('wss://') ? 'fa-lock' : 'fa-unlock-alt'"></i>
+                                                <strong>协议类型:</strong> 
+                                                <span v-if="address.startsWith('wss://')">WSS (安全加密连接)</span>
+                                                <span v-else-if="address.startsWith('ws://')">WS (非加密连接)</span>
+                                                <span v-else>未知</span>
+                                            </div>
+                                        </div>
                                         <!-- 连接地址 -->
                                         <div class="card-text">
                                             <div class="input-group">
@@ -54,6 +64,14 @@
                                                 </div>
                                                 <input type="text" class="form-control" placeholder="输入不带前缀的服务器地址" v-model="address">
                                             </div>
+                                            <small class="form-text text-muted">
+                                                <span v-if="isHttps">
+                                                    <i class="fa fa-info-circle"></i> 当前页面使用 HTTPS，建议使用 wss:// 协议
+                                                </span>
+                                                <span v-else>
+                                                    <i class="fa fa-info-circle"></i> 当前页面使用 HTTP，可以使用 ws:// 或 wss:// 协议
+                                                </span>
+                                            </small>
                                         </div>
                                         <!-- 游戏昵称 -->
                                         <div class="card-text">
@@ -195,6 +213,7 @@
 <script src="./libs/cdn.staticfile.org/highlight.js/9.10.0/highlight.min.js"></script>
 <script src="./libs/cdn.staticfile.org/highlight.js/9.10.0/languages/json.min.js"></script>
 <script src="js/format.js"></script>
+<script src="js/config.js"></script>
 <script src="js/socket.js"></script>
 
 </body>
