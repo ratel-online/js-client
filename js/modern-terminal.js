@@ -15,7 +15,8 @@
     availableRooms: [], // 存储可用房间列表
     countdownTimer: null, // 倒计时定时器
     countdownElement: null, // 倒计时显示元素
-    isMyTurn: false // 是否轮到我行动
+    isMyTurn: false, // 是否轮到我行动
+    currentRound: '' // 当前回合阶段
   };
 
   // DOM elements - 将在 init 函数中初始化
@@ -346,6 +347,8 @@
             // 游戏状态
             if (line.includes('Game starting!')) {
               messageType = 'success';
+              // 游戏开始，重置回合信息
+              terminalState.currentRound = 'Pre-flop';
             }
             // 手牌信息
             else if (line.includes('Your hand:')) {
@@ -385,6 +388,16 @@
             // 回合信息
             else if (line.includes('round')) {
               messageType = 'warning';
+              // 识别当前回合阶段
+              if (line.includes('Pre-flop round')) {
+                terminalState.currentRound = 'Pre-flop';
+              } else if (line.includes('Flop round')) {
+                terminalState.currentRound = 'Flop';
+              } else if (line.includes('Turn round')) {
+                terminalState.currentRound = 'Turn';
+              } else if (line.includes('River round')) {
+                terminalState.currentRound = 'River';
+              }
             }
             // 盲注信息
             else if (line.includes('blind')) {
@@ -732,10 +745,29 @@
     terminalState.isMyTurn = true;
     let timeLeft = seconds;
 
+    // 获取当前阶段的显示名称
+    let roundDisplay = '';
+    switch (terminalState.currentRound) {
+      case 'Pre-flop':
+        roundDisplay = 'Pre-flop (翻前)';
+        break;
+      case 'Flop':
+        roundDisplay = 'Flop (翻牌)';
+        break;
+      case 'Turn':
+        roundDisplay = 'Turn (转牌)';
+        break;
+      case 'River':
+        roundDisplay = 'River (河牌)';
+        break;
+      default:
+        roundDisplay = terminalState.currentRound || 'Unknown';
+    }
+
     // 创建倒计时显示元素
     const countdownLine = document.createElement('div');
     countdownLine.className = 'countdown-timer';
-    countdownLine.innerHTML = `⏱️ Time to decide: <span class="countdown-seconds">${timeLeft}s</span>`;
+    countdownLine.innerHTML = `⏱️ Time to decide [${roundDisplay}]: <span class="countdown-seconds">${timeLeft}s</span>`;
     elements.output.appendChild(countdownLine);
     terminalState.countdownElement = countdownLine;
 

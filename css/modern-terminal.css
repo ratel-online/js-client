@@ -261,6 +261,7 @@ body {
     font-size: 16px;
     display: inline-block;
     animation: fadeIn 0.3s ease-in;
+    box-shadow: 0 2px 10px rgba(0, 255, 65, 0.2);
 }
 
 .countdown-seconds {
