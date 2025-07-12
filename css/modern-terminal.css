@@ -251,6 +251,30 @@ body {
     font-size: 16px;
 }
 
+/* Countdown timer styles */
+.countdown-timer {
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid var(--terminal-border);
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin: 10px 0;
+    font-size: 16px;
+    display: inline-block;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.countdown-seconds {
+    font-weight: bold;
+    color: var(--accent-color);
+    font-size: 18px;
+    margin-left: 5px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* Modal Styles */
 .modal {
     position: fixed;

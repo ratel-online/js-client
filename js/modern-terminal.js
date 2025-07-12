@@ -12,7 +12,10 @@
     wsClient: null,
     commandHistory: [],
     historyIndex: -1,
-    availableRooms: [] // 存储可用房间列表
+    availableRooms: [], // 存储可用房间列表
+    countdownTimer: null, // 倒计时定时器
+    countdownElement: null, // 倒计时显示元素
+    isMyTurn: false // 是否轮到我行动
   };
 
   // DOM elements - 将在 init 函数中初始化
@@ -195,6 +198,8 @@
     if (gameCommands.includes(command)) {
       // Send game command directly to server
       terminalState.wsClient.sendMsg(input);
+      // 停止倒计时
+      stopCountdown();
       return;
     }
 
@@ -356,14 +361,22 @@
             // 获胜信息
             else if (line.includes('Winner:')) {
               messageType = 'success';
+              // 游戏结束，停止倒计时
+              stopCountdown();
             }
             // 行动提示
             else if (line.includes('What do you want to do?')) {
               messageType = 'prompt';
+              // 开始倒计时
+              startCountdown(60);
             }
             // 玩家行动
             else if (line.startsWith('>>')) {
               messageType = 'game-action';
+              // 如果是其他玩家的行动，停止倒计时
+              if (!line.includes('turn to bet') && terminalState.isMyTurn) {
+                stopCountdown();
+              }
             }
             // 金额信息
             else if (line.includes('amount')) {
@@ -709,6 +722,66 @@
         elements.output.scrollTop = elements.output.scrollHeight;
       });
     }
+  }
+
+  // 开始倒计时
+  function startCountdown(seconds = 60) {
+    // 清除之前的倒计时
+    stopCountdown();
+
+    terminalState.isMyTurn = true;
+    let timeLeft = seconds;
+
+    // 创建倒计时显示元素
+    const countdownLine = document.createElement('div');
+    countdownLine.className = 'countdown-timer';
+    countdownLine.innerHTML = `⏱️ Time to decide: <span class="countdown-seconds">${timeLeft}s</span>`;
+    elements.output.appendChild(countdownLine);
+    terminalState.countdownElement = countdownLine;
+
+    // 滚动到底部
+    autoScrollToBottom();
+
+    // 更新倒计时
+    terminalState.countdownTimer = setInterval(() => {
+      timeLeft--;
+      const secondsSpan = countdownLine.querySelector('.countdown-seconds');
+
+      if (timeLeft <= 0) {
+        secondsSpan.textContent = '0s';
+        secondsSpan.style.color = '#ff0041';
+        addOutput('⏰ Time\'s up! Auto-folding...', 'error');
+        // 自动fold
+        terminalState.wsClient.sendMsg('fold');
+        stopCountdown();
+      } else if (timeLeft <= 10) {
+        // 最后10秒警告
+        secondsSpan.textContent = timeLeft + 's';
+        secondsSpan.style.color = '#ff0041';
+        secondsSpan.style.animation = 'blink 0.5s infinite';
+      } else if (timeLeft <= 20) {
+        // 最后20秒提醒
+        secondsSpan.textContent = timeLeft + 's';
+        secondsSpan.style.color = '#ffaa00';
+      } else {
+        secondsSpan.textContent = timeLeft + 's';
+      }
+    }, 1000);
+  }
+
+  // 停止倒计时
+  function stopCountdown() {
+    if (terminalState.countdownTimer) {
+      clearInterval(terminalState.countdownTimer);
+      terminalState.countdownTimer = null;
+    }
+
+    if (terminalState.countdownElement) {
+      terminalState.countdownElement.style.opacity = '0.5';
+      terminalState.countdownElement = null;
+    }
+
+    terminalState.isMyTurn = false;
   }
 
   // Utility functions
