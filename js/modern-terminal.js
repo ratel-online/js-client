@@ -190,11 +190,20 @@
       return;
     }
 
-    // Check for command
+    // Check for game commands (poker actions)
+    const gameCommands = ['call', 'raise', 'fold', 'check', 'allin'];
+    if (gameCommands.includes(command)) {
+      // Send game command directly to server
+      terminalState.wsClient.sendMsg(input);
+      return;
+    }
+
+    // Check for terminal commands
     if (commands[command]) {
       commands[command].execute(parts.slice(1));
     } else {
-      addOutput(`Command not found: ${command}. Type 'help' for available commands.`, 'error');
+      // For any other command, send it to the server
+      terminalState.wsClient.sendMsg(input);
     }
   }
 
@@ -265,16 +274,14 @@
       // Parse and display message in terminal
       if (typeof message === 'string') {
         // Remove HTML tags for terminal display
-        const cleanMessage = message.replace(/<[^>]*>/g, '');
+        let cleanMessage = message.replace(/<[^>]*>/g, '');
+
+        // 解码 HTML 实体
+        cleanMessage = cleanMessage.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
+
         // Skip empty messages
         if (cleanMessage.trim()) {
           // 检查消息中是否包含房间列表信息
-          // 可能的格式：
-          // 1. "ID Type Players State"
-          // 2. "ID Type Players State 48 德州扑克 1 Waiting" (在同一行)
-          // 3. "Room invalid.\nID Type Players State\n48 德州扑克 1 Waiting"
-
-          // 首先检查是否包含房间数据
           const roomDataPattern = /(\d+)\s+([\u4e00-\u9fa5\w-]+)\s+(\d+)\s+(Waiting|Running|Full)/g;
           const roomMatches = [...cleanMessage.matchAll(roomDataPattern)];
 
@@ -317,7 +324,59 @@
             }, 500);
           }
 
-          addOutput(cleanMessage, 'info');
+          // 格式化游戏消息
+          cleanMessage = formatGameMessage(cleanMessage);
+
+          // 分行输出，每行可能有不同的样式
+          const lines = cleanMessage.split('\n');
+          lines.forEach(line => {
+            if (!line.trim()) return;
+
+            // 根据行内容决定样式
+            let messageType = 'info';
+
+            // 游戏状态
+            if (line.includes('Game starting!')) {
+              messageType = 'success';
+            }
+            // 手牌信息
+            else if (line.includes('Your hand:')) {
+              messageType = 'warning';
+              // 高亮显示手牌
+              line = line.replace(/([♠♥♦♣]\w+)/g, '[$1]');
+            }
+            // 公共牌
+            else if (line.includes('Board:')) {
+              messageType = 'info';
+              line = line.replace(/([♠♥♦♣]\w+)/g, '[$1]');
+            }
+            // 获胜信息
+            else if (line.includes('Winner:')) {
+              messageType = 'success';
+            }
+            // 行动提示
+            else if (line.includes('What do you want to do?')) {
+              messageType = 'prompt';
+            }
+            // 玩家行动
+            else if (line.startsWith('>>')) {
+              messageType = 'game-action';
+            }
+            // 金额信息
+            else if (line.includes('amount')) {
+              messageType = 'game-info';
+            }
+            // 回合信息
+            else if (line.includes('round')) {
+              messageType = 'warning';
+            }
+            // 盲注信息
+            else if (line.includes('blind')) {
+              messageType = 'game-info';
+            }
+
+            addSingleLine(line, messageType);
+          });
         }
       }
     };
@@ -559,12 +618,83 @@
     terminalState.currentRoom = `New ${gameType} room`;
   };
 
+  // Format game messages for better readability
+  function formatGameMessage(message) {
+    // 将长消息按关键词分行
+    let formatted = message;
+
+    // 定义需要在其前面换行的关键词
+    const breakBeforePatterns = [
+      'Your hand:',
+      'Board:',
+      'Winner:',
+      'Small blind:',
+      'Big blind:',
+      'You are small blind',
+      'You are big blind',
+      'Pre-flop round',
+      'Flop round',
+      'Turn round',
+      'River round',
+      'Settlement round',
+      'What do you want to do?',
+      'Please room owner',
+      'Game starting!',
+      '>> joined room!',
+      '>> fold',
+      '>> call',
+      '>> raise',
+      '>> check',
+      '>> allin',
+      '>> Settlement'
+    ];
+
+    // 对每个模式进行替换
+    breakBeforePatterns.forEach(pattern => {
+      const regex = new RegExp(`(${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g');
+      formatted = formatted.replace(regex, '\n$1');
+    });
+
+    // 特殊处理玩家金额信息，在每个玩家信息前换行
+    formatted = formatted.replace(/(\w+ amount \d+)/g, '\n$1');
+
+    // 格式化扑克牌显示，添加空格
+    formatted = formatted.replace(/([♠♥♦♣])(\w+)/g, '$1$2 ');
+
+    // 清理多余的换行和空格
+    formatted = formatted.split('\n').map(line => line.trim()).filter(line => line).join('\n');
+
+    return formatted;
+  }
+
+  // Add a single line to output
+  function addSingleLine(line, type = 'default') {
+    if (!line.trim()) return;
+
+    const lineElement = document.createElement('div');
+    lineElement.className = `output-line ${type}`;
+
+    // 如果包含扑克牌符号，使用innerHTML来支持样式
+    if (line.includes('[♠') || line.includes('[♥') || line.includes('[♦') || line.includes('[♣')) {
+      // 为不同花色的牌添加不同颜色
+      let styledLine = line
+        .replace(/\[([♠♣]\w+)\]/g, '<span style="color: #333; font-weight: bold;">$1</span>')  // 黑桃和梅花
+        .replace(/\[([♥♦]\w+)\]/g, '<span style="color: #ff4444; font-weight: bold;">$1</span>'); // 红心和方块
+      lineElement.innerHTML = styledLine;
+    } else {
+      lineElement.textContent = line;
+    }
+
+    elements.output.appendChild(lineElement);
+  }
+
   // Utility functions
   function addOutput(message, type = 'default') {
-    const line = document.createElement('div');
-    line.className = `output-line ${type}`;
-    line.textContent = message;
-    elements.output.appendChild(line);
+    // 如果消息包含换行符，分别输出每一行
+    const lines = message.split('\n');
+    lines.forEach(line => {
+      addSingleLine(line.trim(), type);
+    });
 
     // Auto scroll to bottom with a small delay to ensure DOM update
     setTimeout(() => {

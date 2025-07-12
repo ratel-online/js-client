@@ -233,6 +233,22 @@ body {
     color: #888;
 }
 
+/* Game specific styles */
+.output-line.game-action {
+    color: #ff6b6b;
+    font-weight: bold;
+}
+
+.output-line.game-info {
+    color: #4ecdc4;
+}
+
+.output-line.game-hand {
+    color: #ffe66d;
+    font-weight: bold;
+    font-size: 16px;
+}
+
 /* Modal Styles */
 .modal {
     position: fixed;
