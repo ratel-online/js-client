@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ratel Online - Modern Terminal</title>
+    <link rel="stylesheet" href="css/modern-terminal.css">
+    <link rel="stylesheet" href="libs/font-awesome-4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-title">
+                <span class="terminal-icon">▶</span>
+                <span>Ratel Online Terminal v2.0</span>
+            </div>
+            <div class="terminal-controls">
+                <span class="control minimize">─</span>
+                <span class="control maximize">□</span>
+                <span class="control close">×</span>
+            </div>
+        </div>
+        
+        <div class="terminal-body">
+            <div class="terminal-output" id="terminal-output">
+                <div class="welcome-message">
+                    <pre class="ascii-art">
+    ____       __       __   ____        ___            
+   / __ \____ / /____  / /  / __ \____  / (_)___  ___   
+  / /_/ / __ \/ __/ _ \/ /  / / / / __ \/ / / __ \/ _ \  
+ / _, _/ /_/ / /_/  __/ /  / /_/ / / / / / / / / / /  __/  
+/_/ |_|\__,_/\__/\___/_/   \____/_/ /_/_/_/_/_/ /_/\___/   
+                    </pre>
+                    <div class="system-info">
+                        <span class="info-label">System:</span> Ratel Gaming Platform<br>
+                        <span class="info-label">Version:</span> 2.0.0<br>
+                        <span class="info-label">Status:</span> <span id="connection-status" class="status-disconnected">Disconnected</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="terminal-input-container" id="nickname-input-container">
+                <span class="prompt">ratel@online:~$ </span>
+                <input type="text" class="terminal-input" id="nickname-input" placeholder="Enter your nickname..." autofocus>
+            </div>
+            
+            <div class="terminal-input-container" id="command-input-container" style="display: none;">
+                <span class="prompt" id="user-prompt">user@ratel:~$ </span>
+                <input type="text" class="terminal-input" id="command-input" placeholder="Type 'help' for commands...">
+            </div>
+        </div>
+        
+        <!-- Room Selection Modal -->
+        <div class="modal" id="room-modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Select Room</h2>
+                    <span class="modal-close" onclick="closeRoomModal()">&times;</span>
+                </div>
+                <div class="modal-body" id="room-list">
+                    <!-- Room list will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Type Selection Modal -->
+        <div class="modal" id="game-type-modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Select Game Type</h2>
+                    <span class="modal-close" onclick="closeGameTypeModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="game-type-option" onclick="selectGameType('landlord')">
+                        <div class="game-icon">🃏</div>
+                        <div class="game-info">
+                            <h3>斗地主 (Landlord)</h3>
+                            <p>Classic Chinese card game</p>
+                        </div>
+                    </div>
+                    <div class="game-type-option" onclick="selectGameType('poker')">
+                        <div class="game-icon">♠️</div>
+                        <div class="game-info">
+                            <h3>德州扑克 (Texas Hold'em)</h3>
+                            <p>Popular poker variant</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="js/config.js"></script>
+    <script type="text/javascript" src="js/assets/protobuf.min.js"></script>
+    <script type="text/javascript" src="js/enum.js"></script>
+    <script type="text/javascript" src="js/utils.js"></script>
+    <script type="text/javascript" src="js/poker.js"></script>
+    <script type="text/javascript" src="js/protocol.js"></script>
+    <script type="text/javascript" src="js/handler/handler.js"></script>
+    <script type="text/javascript" src="js/eventWrapper.js"></script>
+    <script type="text/javascript" src="js/toggleable.js"></script>
+    <script type="text/javascript" src="js/panel.js"></script>
+    <script type="text/javascript" src="js/wsClient.js"></script>
+    <script type="text/javascript" src="js/modern-terminal.js"></script>
+</body>
+</html>
