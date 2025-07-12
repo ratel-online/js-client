@@ -377,6 +377,9 @@
 
             addSingleLine(line, messageType);
           });
+
+          // 确保滚动到底部
+          autoScrollToBottom();
         }
       }
     };
@@ -686,6 +689,19 @@
     }
 
     elements.output.appendChild(lineElement);
+
+    // 立即滚动到底部
+    autoScrollToBottom();
+  }
+
+  // Auto scroll to bottom
+  function autoScrollToBottom() {
+    if (elements.output) {
+      // 使用 requestAnimationFrame 确保 DOM 更新后再滚动
+      requestAnimationFrame(() => {
+        elements.output.scrollTop = elements.output.scrollHeight;
+      });
+    }
   }
 
   // Utility functions
@@ -695,11 +711,6 @@
     lines.forEach(line => {
       addSingleLine(line.trim(), type);
     });
-
-    // Auto scroll to bottom with a small delay to ensure DOM update
-    setTimeout(() => {
-      elements.output.scrollTop = elements.output.scrollHeight;
-    }, 10);
   }
 
   function updateConnectionStatus(status, text) {
