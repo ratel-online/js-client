@@ -688,8 +688,8 @@
     if (line.includes('[♠') || line.includes('[♥') || line.includes('[♦') || line.includes('[♣')) {
       // 为不同花色的牌添加不同颜色
       let styledLine = line
-        .replace(/\[([♠♣]\w+)\]/g, '<span style="color: #333; font-weight: bold;">$1</span>')  // 黑桃和梅花
-        .replace(/\[([♥♦]\w+)\]/g, '<span style="color: #ff4444; font-weight: bold;">$1</span>'); // 红心和方块
+        .replace(/\[([♠♣]\w+)\]/g, '<span style="color: #00ff41; font-weight: bold;">$1</span>')  // 黑桃和梅花 - 使用终端绿色
+        .replace(/\[([♥♦]\w+)\]/g, '<span style="color: #ff4444; font-weight: bold;">$1</span>'); // 红心和方块 - 保持红色
       lineElement.innerHTML = styledLine;
     } else {
       lineElement.textContent = line;
