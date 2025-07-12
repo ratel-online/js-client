@@ -212,6 +212,9 @@
     addOutput(`Connecting as ${nickname}...`, 'info');
     updateConnectionStatus('connecting', 'Connecting...');
 
+    // 重要：在创建 WebSocket 连接之前设置 window.name
+    window.name = nickname;
+
     // Hide nickname input, show command input
     elements.nicknameContainer.style.display = 'none';
     elements.commandContainer.style.display = 'flex';
@@ -423,9 +426,13 @@
       addOutput('  1. Join - Join an existing room', 'info');
       addOutput('  2. New  - Create a new room', 'info');
 
-      // Set nickname
+      // Set nickname - window.name 已经在连接前设置
       terminalState.wsClient.setUserName(nickname);
-      terminalState.wsClient.send(window.ClientEventCodes.CODE_CLIENT_NICKNAME_SET, nickname);
+
+      // 如果有 imClient，也设置昵称
+      if (window.imClient && window.imClient.setNickname) {
+        window.imClient.setNickname(nickname);
+      }
 
       // 恢复原始 Panel 类
       if (OriginalPanel) {
