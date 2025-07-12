@@ -90,17 +90,51 @@
         </div>
     </div>
     
-    <script type="text/javascript" src="js/config.js"></script>
+    <script>
+        // 定义开发环境变量，避免未定义错误
+        if (typeof __RATEL_IS_DEVELOPMENT__ === 'undefined') {
+            window.__RATEL_IS_DEVELOPMENT__ = true;
+        }
+        
+        // 确保 window.is 存在
+        window.is = false;
+    </script>
+    <script type="text/javascript" src="js/config.js?v=20250710-1334"></script>
     <script type="text/javascript" src="js/assets/protobuf.min.js"></script>
-    <script type="text/javascript" src="js/enum.js"></script>
-    <script type="text/javascript" src="js/utils.js"></script>
-    <script type="text/javascript" src="js/poker.js"></script>
-    <script type="text/javascript" src="js/protocol.js"></script>
-    <script type="text/javascript" src="js/handler/handler.js"></script>
-    <script type="text/javascript" src="js/eventWrapper.js"></script>
-    <script type="text/javascript" src="js/toggleable.js"></script>
-    <script type="text/javascript" src="js/panel.js"></script>
-    <script type="text/javascript" src="js/wsClient.js"></script>
-    <script type="text/javascript" src="js/modern-terminal.js"></script>
+    <script type="text/javascript" src="js/enum.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/utils.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/poker.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/protocol.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/handler/handler.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/eventWrapper.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/toggleable.js?v=20250712-1531"></script>
+    
+    <!-- 添加必要的隐藏元素以满足 Panel 类的需求 -->
+    <div id="console" style="display: none;">
+        <div id="terminal" style="display: block;">
+            <div id="content"></div>
+            <input id="input" type="text" />
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="js/panel.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/modern-panel.js?v=20250712-1531"></script>
+    
+    <script type="text/javascript" src="js/wsClient.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/imClient.js?v=20250710-1334"></script>
+    <script>
+        // 创建一个空的 defaultSite 对象，避免依赖错误
+        window.defaultSite = {
+            render: function() {
+                // 空实现，因为现代终端不需要 iframe
+            }
+        };
+        
+        // 定义 ClientEventCodes 如果还没有定义
+        if (typeof window.ClientEventCodes === 'undefined') {
+            window.ClientEventCodes = window.ClientEventCode || {};
+        }
+    </script>
+    <script type="text/javascript" src="js/modern-terminal.js?v=20250710-1334"></script>
 </body>
 </html>

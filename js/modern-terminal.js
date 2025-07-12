@@ -2,6 +2,8 @@
 (function () {
   'use strict';
 
+
+
   // Terminal state
   let terminalState = {
     connected: false,
@@ -12,19 +14,8 @@
     historyIndex: -1
   };
 
-  // DOM elements
-  const elements = {
-    output: document.getElementById('terminal-output'),
-    nicknameInput: document.getElementById('nickname-input'),
-    nicknameContainer: document.getElementById('nickname-input-container'),
-    commandInput: document.getElementById('command-input'),
-    commandContainer: document.getElementById('command-input-container'),
-    userPrompt: document.getElementById('user-prompt'),
-    connectionStatus: document.getElementById('connection-status'),
-    roomModal: document.getElementById('room-modal'),
-    roomList: document.getElementById('room-list'),
-    gameTypeModal: document.getElementById('game-type-modal')
-  };
+  // DOM elements - 将在 init 函数中初始化
+  let elements = {};
 
   // Available commands
   const commands = {
@@ -60,6 +51,26 @@
 
   // Initialize terminal
   function init() {
+    // 初始化 DOM 元素
+    elements = {
+      output: document.getElementById('terminal-output'),
+      nicknameInput: document.getElementById('nickname-input'),
+      nicknameContainer: document.getElementById('nickname-input-container'),
+      commandInput: document.getElementById('command-input'),
+      commandContainer: document.getElementById('command-input-container'),
+      userPrompt: document.getElementById('user-prompt'),
+      connectionStatus: document.getElementById('connection-status'),
+      roomModal: document.getElementById('room-modal'),
+      roomList: document.getElementById('room-list'),
+      gameTypeModal: document.getElementById('game-type-modal')
+    };
+
+    // 确保所有元素都存在
+    if (!elements.nicknameInput || !elements.commandInput) {
+      console.error('Required DOM elements not found');
+      return;
+    }
+
     // Focus on nickname input
     elements.nicknameInput.focus();
 
@@ -69,22 +80,37 @@
     elements.commandInput.addEventListener('keydown', handleCommandNavigation);
 
     // Add terminal control event listeners
-    document.querySelector('.control.close').addEventListener('click', () => {
-      if (confirm('Are you sure you want to exit?')) {
-        window.location.href = 'index.html';
-      }
-    });
+    const closeBtn = document.querySelector('.control.close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to exit?')) {
+          window.location.href = 'index.html';
+        }
+      });
+    }
 
-    document.querySelector('.control.minimize').addEventListener('click', () => {
-      document.querySelector('.terminal-container').style.transform = 'scale(0.9)';
-      setTimeout(() => {
-        document.querySelector('.terminal-container').style.transform = 'scale(1)';
-      }, 300);
-    });
+    const minimizeBtn = document.querySelector('.control.minimize');
+    if (minimizeBtn) {
+      minimizeBtn.addEventListener('click', () => {
+        const container = document.querySelector('.terminal-container');
+        if (container) {
+          container.style.transform = 'scale(0.9)';
+          setTimeout(() => {
+            container.style.transform = 'scale(1)';
+          }, 300);
+        }
+      });
+    }
 
-    document.querySelector('.control.maximize').addEventListener('click', () => {
-      document.querySelector('.terminal-container').classList.toggle('fullscreen');
-    });
+    const maximizeBtn = document.querySelector('.control.maximize');
+    if (maximizeBtn) {
+      maximizeBtn.addEventListener('click', () => {
+        const container = document.querySelector('.terminal-container');
+        if (container) {
+          container.classList.toggle('fullscreen');
+        }
+      });
+    }
 
     // Add initial output
     addOutput('Welcome to Ratel Online Terminal v2.0', 'success');
@@ -183,10 +209,52 @@
     elements.commandInput.focus();
 
     // Get WebSocket URL from config
-    const wsUrl = window.RatelConfig?.wsUrl || 'wss://ratel-be.cheverjohn.me/ws';
+    let wsUrl;
+    if (window.RatelConfig && window.RatelConfig.wsAddress && window.RatelConfig.wsAddress !== "__RATEL_WS_ADDRESS__") {
+      wsUrl = window.RatelConfig.wsAddress;
+    } else {
+      // 使用默认的 WebSocket 地址
+      wsUrl = 'wss://ratel-be.cheverjohn.me/ws';
+    }
+
+    console.log('WebSocket URL:', wsUrl);
+
+    // 确保 WsClient 已加载
+    if (typeof window.WsClient === 'undefined') {
+      addOutput('Error: WebSocket client library not loaded!', 'error');
+      addOutput('Please check if all required scripts are loaded.', 'error');
+      throw new Error('WsClient is not defined');
+    }
+
+    // 临时替换 Panel 为 ModernPanel
+    const OriginalPanel = window.Panel;
+    if (window.ModernPanel) {
+      window.Panel = window.ModernPanel;
+      console.log('Using ModernPanel instead of Panel for modern-terminal');
+    }
+
+
 
     // Create WebSocket client
-    terminalState.wsClient = new window.WsClient(wsUrl);
+    // Create WebSocket client
+    try {
+      terminalState.wsClient = new window.WsClient(wsUrl);
+
+      // 检查 panel 是否正确初始化
+      if (!terminalState.wsClient.panel) {
+        throw new Error('Panel initialization failed');
+      }
+    } catch (error) {
+      addOutput('Error creating WebSocket client: ' + error.message, 'error');
+      addOutput('This might be due to missing dependencies or DOM elements.', 'error');
+
+      // 允许用户重试
+      elements.nicknameContainer.style.display = 'flex';
+      elements.commandContainer.style.display = 'none';
+      elements.nicknameInput.value = nickname;
+      elements.nicknameInput.focus();
+      return;
+    }
 
     // Override panel methods to integrate with terminal
     terminalState.wsClient.panel.append = function (message) {
@@ -194,13 +262,24 @@
       if (typeof message === 'string') {
         // Remove HTML tags for terminal display
         const cleanMessage = message.replace(/<[^>]*>/g, '');
-        addOutput(cleanMessage, 'info');
+        // Skip empty messages
+        if (cleanMessage.trim()) {
+          addOutput(cleanMessage, 'info');
+        }
       }
     };
 
     terminalState.wsClient.panel.waitInput = function () {
       // Terminal is always ready for input
       return Promise.resolve();
+    };
+
+    terminalState.wsClient.panel.hide = function () {
+      // No-op for terminal
+    };
+
+    terminalState.wsClient.panel.help = function () {
+      // No-op for terminal, we have our own help
     };
 
     // Initialize WebSocket connection
@@ -215,6 +294,11 @@
       // Set nickname
       terminalState.wsClient.setUserName(nickname);
       terminalState.wsClient.send(window.ClientEventCodes.CODE_CLIENT_NICKNAME_SET, nickname);
+
+      // 恢复原始 Panel 类
+      if (OriginalPanel) {
+        window.Panel = OriginalPanel;
+      }
     }).catch((error) => {
       terminalState.connected = false;
       updateConnectionStatus('disconnected', 'Disconnected');
@@ -226,6 +310,11 @@
       elements.commandContainer.style.display = 'none';
       elements.nicknameInput.value = nickname;
       elements.nicknameInput.focus();
+
+      // 恢复原始 Panel 类
+      if (OriginalPanel) {
+        window.Panel = OriginalPanel;
+      }
     });
   }
 
@@ -391,9 +480,14 @@
   }
 
   // Initialize when DOM is ready
+  console.log('Modern Terminal: Checking document ready state:', document.readyState);
+
   if (document.readyState === 'loading') {
+    console.log('Modern Terminal: Waiting for DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', init);
   } else {
-    init();
+    console.log('Modern Terminal: DOM already loaded, initializing now');
+    // 使用 setTimeout 确保所有脚本都已加载
+    setTimeout(init, 100);
   }
 })();

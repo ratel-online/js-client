@@ -4,9 +4,9 @@
  */
 window.RatelConfig = {
     // 服务器地址，格式：host:port:name[version]
-    serverAddress: "__RATEL_SERVER_ADDRESS__",
+    serverAddress: "ratel-be.cheverjohn.me:443",
     // WebSocket 地址，格式：ws://host:port/ws 或 wss://host:port/ws
-    wsAddress: "__RATEL_WS_ADDRESS__",
+    wsAddress: "wss://ratel-be.cheverjohn.me/ws",
     // 是否为开发环境
-    isDevelopment: __RATEL_IS_DEVELOPMENT__
+    isDevelopment: typeof __RATEL_IS_DEVELOPMENT__ !== 'undefined' ? __RATEL_IS_DEVELOPMENT__ : true
 }; 
