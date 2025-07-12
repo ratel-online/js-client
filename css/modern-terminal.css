@@ -106,14 +106,22 @@ body {
 /* Terminal Body */
 .terminal-body {
     height: calc(100% - 45px);
-    padding: 20px;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     position: relative;
 }
 
 .terminal-output {
-    margin-bottom: 20px;
-    min-height: calc(100% - 60px);
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    margin-bottom: 0;
+    scroll-behavior: smooth;
+}
+
+/* Ensure output content doesn't get hidden behind input */
+.terminal-output::-webkit-scrollbar-track {
+    margin-bottom: 10px;
 }
 
 /* ASCII Art */
@@ -164,10 +172,12 @@ body {
 .terminal-input-container {
     display: flex;
     align-items: center;
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    right: 20px;
+    padding: 20px;
+    background: linear-gradient(to bottom, rgba(26, 31, 58, 0.5), var(--terminal-bg));
+    border-top: 1px solid rgba(0, 255, 65, 0.3);
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
 }
 
 .prompt {
@@ -374,14 +384,16 @@ body {
 /* Command Suggestions */
 .command-suggestions {
     position: absolute;
-    bottom: 60px;
-    left: 20px;
-    right: 20px;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    margin-bottom: 5px;
     background: var(--terminal-header);
     border: 1px solid var(--terminal-border);
     border-radius: 5px;
     padding: 10px;
     display: none;
+    z-index: 10;
 }
 
 .suggestion-item {

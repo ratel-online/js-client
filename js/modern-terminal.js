@@ -470,8 +470,10 @@
     line.textContent = message;
     elements.output.appendChild(line);
 
-    // Auto scroll to bottom
-    elements.output.scrollTop = elements.output.scrollHeight;
+    // Auto scroll to bottom with a small delay to ensure DOM update
+    setTimeout(() => {
+      elements.output.scrollTop = elements.output.scrollHeight;
+    }, 10);
   }
 
   function updateConnectionStatus(status, text) {
