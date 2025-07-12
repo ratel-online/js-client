@@ -11,7 +11,8 @@
     currentRoom: null,
     wsClient: null,
     commandHistory: [],
-    historyIndex: -1
+    historyIndex: -1,
+    availableRooms: [] // 存储可用房间列表
   };
 
   // DOM elements - 将在 init 函数中初始化
@@ -240,6 +241,9 @@
     try {
       terminalState.wsClient = new window.WsClient(wsUrl);
 
+      // 设置全局引用以保持向后兼容性
+      window.wsClient = terminalState.wsClient;
+
       // 检查 panel 是否正确初始化
       if (!terminalState.wsClient.panel) {
         throw new Error('Panel initialization failed');
@@ -264,6 +268,55 @@
         const cleanMessage = message.replace(/<[^>]*>/g, '');
         // Skip empty messages
         if (cleanMessage.trim()) {
+          // 检查消息中是否包含房间列表信息
+          // 可能的格式：
+          // 1. "ID Type Players State"
+          // 2. "ID Type Players State 48 德州扑克 1 Waiting" (在同一行)
+          // 3. "Room invalid.\nID Type Players State\n48 德州扑克 1 Waiting"
+
+          // 首先检查是否包含房间数据
+          const roomDataPattern = /(\d+)\s+([\u4e00-\u9fa5\w-]+)\s+(\d+)\s+(Waiting|Running|Full)/g;
+          const roomMatches = [...cleanMessage.matchAll(roomDataPattern)];
+
+          if (roomMatches.length > 0) {
+            // 如果找到房间数据，解析它们
+            roomMatches.forEach(match => {
+              const roomData = {
+                roomId: parseInt(match[1]),
+                roomType: match[2],
+                roomClientCount: parseInt(match[3]),
+                status: match[4]
+              };
+
+              // 避免重复添加相同的房间
+              const exists = terminalState.availableRooms.some(r => r.roomId === roomData.roomId);
+              if (!exists) {
+                terminalState.availableRooms.push(roomData);
+                console.log('Parsed room:', roomData);
+              }
+            });
+
+            // 如果正在等待显示房间模态框，延迟一点显示
+            if (terminalState.waitingForRoomModal && terminalState.availableRooms.length > 0) {
+              setTimeout(() => {
+                if (terminalState.waitingForRoomModal) {
+                  terminalState.waitingForRoomModal = false;
+                  clearTimeout(terminalState.roomModalTimeout);
+                  showRoomModal();
+                }
+              }, 300);
+            }
+          } else if (cleanMessage.includes('Room invalid') && terminalState.waitingForRoomModal) {
+            // 如果收到 "Room invalid" 且没有房间数据，可能表示没有可用房间
+            setTimeout(() => {
+              if (terminalState.waitingForRoomModal && terminalState.availableRooms.length === 0) {
+                terminalState.waitingForRoomModal = false;
+                clearTimeout(terminalState.roomModalTimeout);
+                showRoomModal();
+              }
+            }, 500);
+          }
+
           addOutput(cleanMessage, 'info');
         }
       }
@@ -280,6 +333,23 @@
 
     terminalState.wsClient.panel.help = function () {
       // No-op for terminal, we have our own help
+    };
+
+    // 保存原始的 dispatch 方法
+    const originalDispatch = terminalState.wsClient.dispatch;
+    terminalState.wsClient.dispatch = function (serverTransferData) {
+      // 拦截房间列表数据
+      if (serverTransferData.code === window.ClientEventCodes.CODE_SHOW_ROOMS) {
+        try {
+          const rooms = JSON.parse(serverTransferData.data);
+          terminalState.availableRooms = rooms;
+          console.log('Received rooms:', rooms);
+        } catch (e) {
+          console.error('Failed to parse room data:', e);
+        }
+      }
+      // 调用原始的 dispatch 方法
+      originalDispatch.call(this, serverTransferData);
     };
 
     // Initialize WebSocket connection
@@ -344,13 +414,19 @@
       return;
     }
 
-    // Send request to get room list
-    terminalState.wsClient.send(window.ClientEventCodes.CODE_SHOW_OPTIONS_PVP);
+    // 发送 "1" 命令来获取房间列表
+    addOutput('Fetching available rooms...', 'info');
+    terminalState.availableRooms = []; // 清空之前的房间列表
+    terminalState.waitingForRoomModal = true; // 标记正在等待房间数据
+    terminalState.wsClient.sendMsg("1"); // 使用 sendMsg 发送原始消息
 
-    // Show room selection modal
-    setTimeout(() => {
-      showRoomModal();
-    }, 500);
+    // 设置超时，以防服务器没有返回数据
+    terminalState.roomModalTimeout = setTimeout(() => {
+      if (terminalState.waitingForRoomModal) {
+        terminalState.waitingForRoomModal = false;
+        showRoomModal();
+      }
+    }, 2000);
   }
 
   function createRoom() {
@@ -405,21 +481,41 @@
 
   // Modal functions
   function showRoomModal() {
-    // Populate with sample rooms (this would come from server)
-    elements.roomList.innerHTML = `
-            <div class="room-item" onclick="selectRoom('Room #1', 43)">
-                <div class="room-name">Room #1</div>
-                <div class="room-info">ID: 43 | Players: 2/3 | Status: Waiting</div>
-            </div>
-            <div class="room-item" onclick="selectRoom('Room #2', 44)">
-                <div class="room-name">Room #2</div>
-                <div class="room-info">ID: 44 | Players: 1/3 | Status: Waiting</div>
-            </div>
-            <div class="room-item" onclick="selectRoom('Room #3', 45)">
-                <div class="room-name">Room #3</div>
-                <div class="room-info">ID: 45 | Players: 0/3 | Status: Empty</div>
-            </div>
+    // 使用真实的房间数据
+    if (terminalState.availableRooms && terminalState.availableRooms.length > 0) {
+      let roomsHtml = '';
+      terminalState.availableRooms.forEach(room => {
+        // roomType 已经是中文了，如 "德州扑克"
+        const gameType = room.roomType;
+        const status = room.status;
+        const isRunning = status === 'Running';
+        const isJoinable = !isRunning && room.roomClientCount < 3;
+
+        // 根据状态设置不同的样式和行为
+        const roomClass = isRunning ? 'room-item room-running' :
+          !isJoinable ? 'room-item room-full' :
+            'room-item';
+        const onclick = isJoinable ? `onclick="selectRoom('Room #${room.roomId}', ${room.roomId})"` : '';
+        const statusText = isRunning ? 'Running (Cannot Join)' :
+          room.roomClientCount >= 3 ? 'Full' :
+            'Waiting';
+
+        roomsHtml += `
+          <div class="${roomClass}" ${onclick} ${!isJoinable ? 'style="cursor: not-allowed; opacity: 0.6;"' : ''}>
+            <div class="room-name">Room #${room.roomId}</div>
+            <div class="room-info">ID: ${room.roomId} | ${gameType} | Players: ${room.roomClientCount}/3 | Status: ${statusText}</div>
+          </div>
         `;
+      });
+      elements.roomList.innerHTML = roomsHtml;
+    } else {
+      elements.roomList.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #888;">
+          <p>No rooms available</p>
+          <p style="margin-top: 10px; font-size: 14px;">Create a new room or refresh the list</p>
+        </div>
+      `;
+    }
     elements.roomModal.style.display = 'flex';
   }
 
@@ -440,11 +536,11 @@
     addOutput(`Joining ${roomName} (ID: ${roomId})...`, 'info');
     terminalState.currentRoom = roomName;
 
-    // Send join room command
-    terminalState.wsClient.send(window.ClientEventCodes.CODE_ROOM_JOIN, roomId);
+    // 发送房间 ID 来加入房间
+    terminalState.wsClient.sendMsg(roomId.toString());
 
     closeRoomModal();
-    addOutput(`Successfully joined ${roomName}!`, 'success');
+    // 不要立即显示成功消息，等待服务器确认
   };
 
   window.selectGameType = function (gameType) {

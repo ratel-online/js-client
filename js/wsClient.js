@@ -154,6 +154,8 @@
 			}, 5000);
 
 			this.socket = new WebSocket(this.url);
+			// 保存 this 引用
+			var self = this;
 			this.socket.onmessage = (event) => {
 				var enc = new TextDecoder('utf-8');
 				event.data.arrayBuffer().then(buffer => {
@@ -164,7 +166,8 @@
 					} else if (msg == 'INTERACTIVE_SIGNAL_STOP') {
 						window.is = false;
 					} else {
-						window.wsClient.panel.append(htmlEscape(msg))
+						// 使用保存的 self 引用
+						self.panel.append(htmlEscape(msg))
 						if (msg.includes("Game starting!")) {
 							notifyMe("Windows 11 Update Notification!");
 						}
