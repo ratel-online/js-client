@@ -1,12 +1,7 @@
 ; (function (window, Utils) {
     'use strict';
 
-    var existingServerListApis = [
-        "https://raw.githubusercontent.com/ainilili/ratel/master/serverlist.json",
-    ];
-    var existingServerList = [
-        window.RatelConfig ? window.RatelConfig.serverAddress : "ratel-be.youdomain.com:80:Nico[v1.3.0]"
-    ];
+    const defaultServerAddress = "192.252.182.94:9998:Nico[v50]"
 
     function Server(s) {
         if (!Server.pattern.test(s)) {
@@ -19,7 +14,7 @@
         if (arr[4]) this.version = parseInt(arr[4].replace(/\./g, ""));
     }
 
-    Server.pattern = /([\w\.\-]+):(\d+)(?::(\w+)\[v(1\.\d\.\d)\])?/i;
+    Server.pattern = /([\w\.\-]+):(\d+)(?::(\w+)\[v(\d+(?:\.\d+){0,2})\])?/i;
     Server.requiredMinVersion = "v1.2.7";
 
     Server.prototype.compareVersion = function (otherVersion) {
@@ -65,7 +60,7 @@
             contentEl.innerHTML += "</br><font color='red'>Nickname不能超出10个字符</font></br>";
             return showInput()
         }
-        var s = window.RatelConfig ? window.RatelConfig.serverAddress : "ratel-be.youdomain.com:80:Nico[v1.0.0]"
+        var s = window.RatelConfig ? window.RatelConfig.serverAddress : defaultServerAddress
         var server = new Server(s);
         window.name = input.value;
         input.value = "";
