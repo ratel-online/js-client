@@ -8,5 +8,5 @@ window.RatelConfig = {
     // WebSocket 地址，格式：ws://host:port/ws 或 wss://host:port/ws
     wsAddress: "__RATEL_WS_ADDRESS__",
     // 是否为开发环境
-    isDevelopment: __RATEL_IS_DEVELOPMENT__
+    isDevelopment: typeof __RATEL_IS_DEVELOPMENT__ !== 'undefined' ? __RATEL_IS_DEVELOPMENT__ : true
 }; 

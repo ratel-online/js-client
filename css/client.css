@@ -64,3 +64,16 @@ input:focus  {
     height: 1.3em;
     width: 421px;
 }
+
+/* Poker suit colors for old client */
+.poker-suit-red,
+span.poker-suit-red {
+    color: #FF0000 !important;
+    font-weight: bold;
+}
+
+.poker-suit-green,
+span.poker-suit-green {
+    color: #00FF00 !important;
+    font-weight: bold;
+}

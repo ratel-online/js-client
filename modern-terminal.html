@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ratel Online - Modern Terminal</title>
+    <link rel="icon" href="favicons/favicon-ts.png" type="image/png">
+    <link rel="stylesheet" href="css/modern-terminal.css?v=20250712-1740">
+    <link rel="stylesheet" href="libs/font-awesome-4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/circular-layout.css?v=20250712-1800">
+    <link rel="stylesheet" href="css/poker-suits.css">
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-title">
+                <span class="terminal-icon">▶</span>
+                <span>Ratel Online Terminal v2.0</span>
+            </div>
+            <div class="terminal-controls">
+                <span class="control minimize">─</span>
+                <span class="control maximize">□</span>
+                <span class="control close">×</span>
+            </div>
+        </div>
+        
+        <div class="terminal-body">
+            <div class="terminal-output" id="terminal-output">
+                <div class="welcome-message">
+                    <pre class="ascii-art">
+    ____       __       __   ____        ___            
+   / __ \____ / /____  / /  / __ \____  / (_)___  ___   
+  / /_/ / __ \/ __/ _ \/ /  / / / / __ \/ / / __ \/ _ \  
+ / _, _/ /_/ / /_/  __/ /  / /_/ / / / / / / / / / /  __/  
+/_/ |_|\__,_/\__/\___/_/   \____/_/ /_/_/_/_/_/ /_/\___/   
+                    </pre>
+                    <div class="system-info">
+                        <span class="info-label">System:</span> Ratel Gaming Platform<br>
+                        <span class="info-label">Version:</span> 2.0.0<br>
+                        <span class="info-label">Status:</span> <span id="connection-status" class="status-disconnected">Disconnected</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="terminal-input-container" id="nickname-input-container">
+                <span class="prompt">ratel@online:~$ </span>
+                <input type="text" class="terminal-input" id="nickname-input" placeholder="Enter your nickname...">
+            </div>
+            
+            <div class="terminal-input-container" id="command-input-container" style="display: none;">
+                <span class="prompt" id="user-prompt">user@ratel:~$ </span>
+                <input type="text" class="terminal-input" id="command-input" placeholder="Type 'help' for commands...">
+            </div>
+        </div>
+        
+        <!-- Room Selection Modal -->
+        <div class="modal" id="room-modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Select Room</h2>
+                    <span class="modal-close" onclick="closeRoomModal()">&times;</span>
+                </div>
+                <div class="modal-body" id="room-list">
+                    <!-- Room list will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Type Selection Modal -->
+        <div class="modal" id="game-type-modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Select Game Type</h2>
+                    <span class="modal-close" onclick="closeGameTypeModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <!-- <div class="game-type-option" onclick="selectGameType('landlord')">
+                        <div class="game-icon">🃏</div>
+                        <div class="game-info">
+                            <h3>1. 斗地主 (Landlord)</h3>
+                            <p>Classic Chinese card game</p>
+                        </div>
+                    </div>
+                    <div class="game-type-option" onclick="selectGameType('landlord-laizi')">
+                        <div class="game-icon">🎴</div>
+                        <div class="game-info">
+                            <h3>2. 斗地主-癞子版</h3>
+                            <p>Landlord with wild cards</p>
+                        </div>
+                    </div>
+                    <div class="game-type-option" onclick="selectGameType('landlord-super')">
+                        <div class="game-icon">🎯</div>
+                        <div class="game-info">
+                            <h3>3. 斗地主-大招版</h3>
+                            <p>Landlord with special moves</p>
+                        </div>
+                    </div>
+                    <div class="game-type-option" onclick="selectGameType('run-fast')">
+                        <div class="game-icon">🏃</div>
+                        <div class="game-info">
+                            <h3>4. 跑得快 (Run Fast)</h3>
+                            <p>Fast-paced shedding game</p>
+                        </div>
+                    </div> -->
+                    <div class="game-type-option" onclick="selectGameType('poker')">
+                        <div class="game-icon">♠️</div>
+                        <div class="game-info">
+                            <h3>5. 德州扑克 (Texas Hold'em)</h3>
+                            <p>Popular poker variant</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Circular Seat Layout -->
+    <div class="circular-layout-container" id="circular-layout-container" style="display: none;">
+        <div class="layout-header">
+            <div class="room-info-display">
+                <span class="room-label">Room #</span><span id="room-number">--</span>
+                <span class="separator">|</span>
+                <span class="players-label">Players:</span> <span id="players-count">0/10</span>
+            </div>
+            <div class="layout-controls">
+                <button class="layout-btn" id="refresh-layout" title="Refresh Layout">
+                    <i class="fa fa-refresh"></i>
+                </button>
+                <button class="layout-btn" id="toggle-layout" title="Toggle Layout">
+                    <i class="fa fa-compress"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="circular-layout-wrapper">
+            <div class="circular-layout" id="circular-layout">
+                <!-- Center area for pot and community cards -->
+                <div class="center-area">
+                    <div class="pot-display">
+                        <div class="pot-label">POT</div>
+                        <div class="pot-amount" id="pot-amount">$0</div>
+                    </div>
+                    <div class="community-cards" id="community-cards">
+                        <!-- Community cards will be added here -->
+                    </div>
+                    <div class="game-stage" id="game-stage">Waiting...</div>
+                </div>
+                
+                <!-- Player seats will be dynamically added here -->
+            </div>
+        </div>
+        
+        <!-- Game actions panel -->
+        <div class="game-actions-panel" id="game-actions-panel" style="display: none;">
+            <div class="action-info">
+                <span class="action-label">Current Bet:</span> <span id="current-bet">$0</span>
+                <span class="separator">|</span>
+                <span class="action-label">Your Turn</span>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn fold-btn" data-action="fold">Fold</button>
+                <button class="action-btn check-btn" data-action="check">Check</button>
+                <button class="action-btn call-btn" data-action="call">Call $<span id="call-amount">0</span></button>
+                <button class="action-btn raise-btn" data-action="raise">Raise</button>
+                <button class="action-btn allin-btn" data-action="allin">All In</button>
+            </div>
+            <div class="raise-controls" id="raise-controls" style="display: none;">
+                <input type="range" class="raise-slider" id="raise-slider" min="0" max="1000" value="0">
+                <input type="number" class="raise-input" id="raise-input" min="0" max="1000" value="0">
+                <button class="confirm-raise-btn" id="confirm-raise">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 定义开发环境变量，避免未定义错误
+        if (typeof __RATEL_IS_DEVELOPMENT__ === 'undefined') {
+            window.__RATEL_IS_DEVELOPMENT__ = true;
+        }
+        
+        // 确保 window.is 存在
+        window.is = false;
+    </script>
+    <script type="text/javascript" src="js/config.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/assets/protobuf.min.js"></script>
+    <script type="text/javascript" src="js/enum.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/utils.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/poker.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/protocol.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/handler/handler.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/eventWrapper.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/toggleable.js?v=20250712-1531"></script>
+    
+    <!-- 添加必要的隐藏元素以满足 Panel 类的需求 -->
+    <div id="console" style="display: none;">
+        <div id="terminal" style="display: block;">
+            <div id="content"></div>
+            <input id="input" type="text" />
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="js/panel.js?v=20250710-1334"></script>
+    <script type="text/javascript" src="js/modern-panel.js?v=20250712-1531"></script>
+    
+    <script type="text/javascript" src="js/wsClient.js?v=20250712-1547"></script>
+    <script type="text/javascript" src="js/imClient.js?v=20250710-1334"></script>
+    <script>
+        // 创建一个空的 defaultSite 对象，避免依赖错误
+        window.defaultSite = {
+            render: function() {
+                // 空实现，因为现代终端不需要 iframe
+            }
+        };
+        
+        // 定义 ClientEventCodes 如果还没有定义
+        if (typeof window.ClientEventCodes === 'undefined') {
+            window.ClientEventCodes = window.ClientEventCode || {};
+        }
+    </script>
+    <script type="text/javascript" src="js/modern-terminal.js?v=20250712-1740"></script>
+    <script type="text/javascript" src="js/circular-layout.js?v=20250712-1800"></script>
+</body>
+</html>
