@@ -16,7 +16,9 @@
     countdownTimer: null, // 倒计时定时器
     countdownElement: null, // 倒计时显示元素
     isMyTurn: false, // 是否轮到我行动
-    currentRound: '' // 当前回合阶段
+    currentRound: '', // 当前回合阶段
+    roomCreationState: null, // 房间创建状态: null, 'selecting_mode', 'selecting_pvp_option', 'selecting_game_type'
+    waitingForGameType: false // 是否正在等待游戏类型选择
   };
 
   // DOM elements - 将在 init 函数中初始化
@@ -333,6 +335,49 @@
             }, 500);
           }
 
+          // 检查是否在房间创建流程中
+          if (terminalState.roomCreationState) {
+            // 检查是否是主选项菜单 (Options: 1. PvP 2. PvE 3. Settings)
+            if (cleanMessage.includes('Options:') && cleanMessage.includes('1. PvP')) {
+              terminalState.roomCreationState = 'selecting_mode';
+              // 自动选择 PvP
+              setTimeout(() => {
+                terminalState.wsClient.sendMsg("1");
+              }, 100);
+              return;
+            }
+            // 检查是否是PvP选项菜单 (PVP: 1. Create Room 2. Room List...)
+            else if (cleanMessage.includes('PVP:') && cleanMessage.includes('1. Create Room')) {
+              terminalState.roomCreationState = 'selecting_pvp_option';
+              // 自动选择 Create Room
+              setTimeout(() => {
+                terminalState.wsClient.sendMsg("1");
+              }, 100);
+              return;
+            }
+            // 检查是否是游戏类型选择 (Please select game type)
+            else if (cleanMessage.includes('Please select game type')) {
+              terminalState.roomCreationState = 'selecting_game_type';
+              terminalState.waitingForGameType = true;
+              // 显示游戏类型选择模态框
+              setTimeout(() => {
+                showGameTypeModal();
+              }, 100);
+              return;
+            }
+            // 检查是否收到 "Game type invalid" 错误
+            else if (cleanMessage.includes('Game type invalid')) {
+              // 如果在等待游戏类型选择，重新显示选择框
+              if (terminalState.waitingForGameType) {
+                addOutput('Invalid game type. Please select again.', 'error');
+                setTimeout(() => {
+                  showGameTypeModal();
+                }, 500);
+                return;
+              }
+            }
+          }
+
           // 格式化游戏消息
           cleanMessage = formatGameMessage(cleanMessage);
 
@@ -439,6 +484,16 @@
           console.error('Failed to parse room data:', e);
         }
       }
+      // 拦截房间创建成功
+      else if (serverTransferData.code === window.ClientEventCodes.CODE_ROOM_CREATE_SUCCESS) {
+        try {
+          const roomData = JSON.parse(serverTransferData.data);
+          addOutput(`Room created successfully! Room ID: ${roomData.id}`, 'success');
+          terminalState.currentRoom = `Room #${roomData.id}`;
+        } catch (e) {
+          console.error('Failed to parse room creation data:', e);
+        }
+      }
       // 调用原始的 dispatch 方法
       originalDispatch.call(this, serverTransferData);
     };
@@ -531,7 +586,11 @@
     }
 
     addOutput('Creating new room...', 'info');
-    showGameTypeModal();
+    // Set room creation state
+    terminalState.roomCreationState = 'starting';
+    // Send "2" to server to start the room creation flow
+    terminalState.wsClient.sendMsg("2");
+    // The server will respond with options, and we'll handle them in the message handler
   }
 
   function showRooms() {
@@ -625,6 +684,12 @@
 
   window.closeGameTypeModal = function () {
     elements.gameTypeModal.style.display = 'none';
+    // If we were waiting for game type selection, reset the state
+    if (terminalState.waitingForGameType) {
+      terminalState.roomCreationState = null;
+      terminalState.waitingForGameType = false;
+      addOutput('Room creation cancelled', 'warning');
+    }
   };
 
   window.selectRoom = function (roomName, roomId) {
@@ -639,19 +704,30 @@
   };
 
   window.selectGameType = function (gameType) {
-    addOutput(`Creating ${gameType === 'landlord' ? 'Landlord' : 'Texas Hold\'em'} room...`, 'info');
+    const gameTypeMap = {
+      'landlord': { name: '斗地主 (Landlord)', number: '1' },
+      'landlord-laizi': { name: '斗地主-癞子版', number: '2' },
+      'landlord-super': { name: '斗地主-大招版', number: '3' },
+      'run-fast': { name: '跑得快 (Run Fast)', number: '4' },
+      'poker': { name: '德州扑克 (Texas Hold\'em)', number: '5' }
+    };
 
-    // Send create room command based on game type
-    if (gameType === 'landlord') {
-      terminalState.wsClient.send(window.ClientEventCodes.CODE_ROOM_CREATE_PVP);
-    } else {
-      // For Texas Hold'em, might need different code
-      terminalState.wsClient.send(window.ClientEventCodes.CODE_ROOM_CREATE_PVP, '5');
+    const selectedGame = gameTypeMap[gameType];
+    if (!selectedGame) {
+      addOutput('Error: Invalid game type selected', 'error');
+      return;
     }
 
+    addOutput(`Creating ${selectedGame.name} room...`, 'info');
+
+    // Send the correct game type number
+    terminalState.wsClient.sendMsg(selectedGame.number);
+
     closeGameTypeModal();
-    addOutput('Room created successfully!', 'success');
-    terminalState.currentRoom = `New ${gameType} room`;
+    // Reset room creation state
+    terminalState.roomCreationState = null;
+    terminalState.waitingForGameType = false;
+    // Don't show success message yet, wait for server confirmation
   };
 
   // Format game messages for better readability

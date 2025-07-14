@@ -344,6 +344,25 @@ body {
     overflow-y: auto;
 }
 
+/* Custom scrollbar for modal */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: rgba(0, 255, 65, 0.1);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #00ff41;
+}
+
 /* Room List */
 .room-item {
     background: rgba(0, 255, 65, 0.1);
@@ -407,6 +426,11 @@ body {
     background: var(--hover-bg);
     transform: scale(1.02);
     box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+}
+
+.game-type-option:active {
+    transform: scale(0.98);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
 }
 
 .game-icon {
