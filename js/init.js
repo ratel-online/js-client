@@ -4,9 +4,6 @@
     const defaultServerAddress = "192.252.182.94:9998:Nico[v50]"
 
     function Server(s) {
-        if (!Server.pattern.test(s)) {
-            throw new Error("Illegal server address. Server address schema like: ip:port:name[version].");
-        }
         var arr = Server.pattern.exec(s);
         this.host = arr[1];
         this.port = parseInt(arr[2]);
@@ -14,8 +11,7 @@
         if (arr[4]) this.version = parseInt(arr[4].replace(/\./g, ""));
     }
 
-    Server.pattern = /([\w\.\-]+):(\d+)(?::(\w+)\[v(\d+(?:\.\d+){0,2})\])?/i;
-    Server.requiredMinVersion = "v1.2.7";
+    Server.pattern = /([\w\.\-]+):(\d+)(?::(\w+))?(?:\[v(\w+)\])?/;
 
     Server.prototype.compareVersion = function (otherVersion) {
         if (otherVersion.startsWith("v") || otherVersion.startsWith("V")) {
@@ -61,6 +57,7 @@
             return showInput()
         }
         var s = window.RatelConfig ? window.RatelConfig.serverAddress : defaultServerAddress
+        console.log(s)
         var server = new Server(s);
         window.name = input.value;
         input.value = "";
