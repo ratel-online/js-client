@@ -235,7 +235,7 @@
       wsUrl = window.RatelConfig.wsAddress;
     } else {
       // 使用默认的 WebSocket 地址
-      wsUrl = 'wss://ratel-be.cheverjohn.me/ws';
+      wsUrl = 'wss://ratel-be.youdomain.com/ws';
     }
 
     console.log('WebSocket URL:', wsUrl);
