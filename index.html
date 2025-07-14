@@ -95,7 +95,7 @@
             </div>
         </div>
         <div id="terminal">
-            <div id="bar" style="cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#d8d8d8'; this.style.color='#333'; this.style.textDecoration='underline';" onmouseout="this.style.backgroundColor=''; this.style.color=''; this.style.textDecoration='';" onclick="window.location.href='modern-terminal.html'" title="Click for modern terminal">Ratel-Online v1.0.2(点击我，进入现代终端，只支持德扑:~)</div>
+            <div id="bar" style="cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#d8d8d8'; this.style.color='#333'; this.style.textDecoration='underline';" onmouseout="this.style.backgroundColor=''; this.style.color=''; this.style.textDecoration='';" onclick="window.location.href='modern-terminal.html'" title="Click for modern terminal">Ratel-Online</div>
             <div id="contains">
                 <div id="content">
                     <span>Welcome ratel websocket client. Power by <a href="https://github.com/marmot-z/js-ratel-client"
@@ -118,7 +118,6 @@
             </div>
         </div>
     </div>
-</body>
     <script type="text/javascript" src="js/config.js?v=20250710-1334"></script>
     <script type="text/javascript" src="js/assets/protobuf.min.js"></script>
     <script type="text/javascript" src="js/enum.js?v=20250710-1334"></script>
@@ -129,9 +128,54 @@
 <script type="text/javascript" src="js/eventWrapper.js?v=20250710-1334"></script>
 <script type="text/javascript" src="js/toggleable.js?v=20250710-1334"></script>
 <script type="text/javascript" src="js/panel.js?v=20250710-1334"></script>
+<script type="text/javascript" src="js/connectionStatus.js?v=20250710-1334"></script>
+<script type="text/javascript" src="js/networkMonitor.js?v=20250710-1334"></script>
 <script type="text/javascript" src="js/wsClient.js?v=20250710-1334"></script>
 <script type="text/javascript" src="js/imClient.js?v=20250710-1334"></script>
 <script type="text/javascript" src="js/site.js?v=20250710-1334"></script>
 <script type="text/javascript" src="js/responsive.js?v=20250710-1334"></script>
 <script type="text/javascript" src="js/init.js?v=20250710-1334"></script>
+    <script>
+        // 彩蛋功能：控制台命令触发
+        window.poker = function() {
+            console.log('🎮 正在进入现代终端...');
+            window.location.href = '/modern-terminal.html';
+        };
+        
+        window.game = function() {
+            console.log('🎮 正在进入现代终端...');
+            window.location.href = '/modern-terminal.html';
+        };
+        
+        // 为了让用户更容易发现，在控制台输出提示
+        console.log('%c🎮 提示：输入 poker() 或 game() 可以快速进入游戏终端', 'color: #00ff00; font-size: 14px; font-weight: bold;');
+        
+        // 彩蛋功能：点击错误数字触发
+        document.addEventListener('DOMContentLoaded', function() {
+            // 找到错误计数的元素
+            const errorIcon = document.querySelector('.fa-times-circle');
+            if (errorIcon) {
+                // 添加点击事件
+                errorIcon.style.cursor = 'pointer';
+                errorIcon.title = '点击进入现代终端';
+                
+                errorIcon.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    console.log('🎮 通过错误图标进入现代终端...');
+                    window.location.href = '/modern-terminal.html';
+                });
+                
+                // 添加悬停效果
+                errorIcon.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.1)';
+                    this.style.transition = 'transform 0.2s ease';
+                });
+                
+                errorIcon.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            }
+        });
+    </script>
+</body>
 </html>
