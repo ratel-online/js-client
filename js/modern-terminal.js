@@ -684,8 +684,8 @@
 
   window.closeGameTypeModal = function () {
     elements.gameTypeModal.style.display = 'none';
-    // If we were waiting for game type selection, reset the state
-    if (terminalState.waitingForGameType) {
+    // Only show cancelled message if we're still waiting (user closed without selecting)
+    if (terminalState.waitingForGameType && terminalState.roomCreationState === 'selecting_game_type') {
       terminalState.roomCreationState = null;
       terminalState.waitingForGameType = false;
       addOutput('Room creation cancelled', 'warning');
@@ -723,10 +723,11 @@
     // Send the correct game type number
     terminalState.wsClient.sendMsg(selectedGame.number);
 
-    closeGameTypeModal();
-    // Reset room creation state
+    // Reset room creation state BEFORE closing modal to avoid "cancelled" message
     terminalState.roomCreationState = null;
     terminalState.waitingForGameType = false;
+
+    closeGameTypeModal();
     // Don't show success message yet, wait for server confirmation
   };
 
