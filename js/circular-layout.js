@@ -146,7 +146,7 @@
       player.cards.forEach(card => {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'player-card';
-        cardDiv.textContent = this.formatCard(card);
+        cardDiv.innerHTML = this.formatCard(card);
         cardsDiv.appendChild(cardDiv);
       });
       seat.appendChild(cardsDiv);
@@ -160,9 +160,14 @@
     if (!card || card === 'hidden') return '?';
     // Convert card format if needed
     const suits = { 'S': '♠', 'H': '♥', 'D': '♦', 'C': '♣' };
+    const suitClasses = { 'S': 'suit-spade', 'H': 'suit-heart', 'D': 'suit-diamond', 'C': 'suit-club' };
     const value = card.substring(0, card.length - 1);
     const suit = card.charAt(card.length - 1);
-    return value + (suits[suit] || suit);
+    const suitSymbol = suits[suit] || suit;
+    const suitClass = suitClasses[suit] || '';
+
+    // Return formatted card with proper class for coloring
+    return `<span class="${suitClass}">${value}${suitSymbol}</span>`;
   };
 
   // Format amount for display
@@ -280,7 +285,7 @@
     this.communityCards.forEach(card => {
       const cardDiv = document.createElement('div');
       cardDiv.className = 'community-card';
-      cardDiv.textContent = this.formatCard(card);
+      cardDiv.innerHTML = this.formatCard(card);
       container.appendChild(cardDiv);
     });
   };

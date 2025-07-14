@@ -1,0 +1,128 @@
+/* Unified Poker Suit Colors */
+/* According to product requirements:
+   - Hearts (♥) and Diamonds (♦): Red (#FF0000)
+   - Spades (♠) and Clubs (♣): Green (#00FF00)
+*/
+
+/* Base suit color classes */
+.suit-heart,
+.suit-diamond {
+    color: #FF0000 !important;
+}
+
+.suit-spade,
+.suit-club {
+    color: #00FF00 !important;
+}
+
+/* Inline text suit colors */
+.poker-suit-red {
+    color: #FF0000;
+    font-weight: bold;
+}
+
+.poker-suit-green {
+    color: #00FF00;
+    font-weight: bold;
+}
+
+/* Card display specific styles */
+.poker-card .suit-heart::before { content: '♥'; color: #FF0000; }
+.poker-card .suit-diamond::before { content: '♦'; color: #FF0000; }
+.poker-card .suit-spade::before { content: '♠'; color: #00FF00; }
+.poker-card .suit-club::before { content: '♣'; color: #00FF00; }
+
+/* Community cards in circular layout */
+.community-card .suit-heart,
+.community-card .suit-diamond {
+    color: #FF0000;
+}
+
+.community-card .suit-spade,
+.community-card .suit-club {
+    color: #00FF00;
+}
+
+/* Player cards in circular layout */
+.player-card .suit-heart,
+.player-card .suit-diamond {
+    color: #FF0000;
+}
+
+.player-card .suit-spade,
+.player-card .suit-club {
+    color: #00FF00;
+}
+
+/* Terminal output suit colors */
+.terminal-output .suit-heart,
+.terminal-output .suit-diamond,
+span[data-suit="heart"],
+span[data-suit="diamond"] {
+    color: #FF0000;
+    font-weight: bold;
+}
+
+.terminal-output .suit-spade,
+.terminal-output .suit-club,
+span[data-suit="spade"],
+span[data-suit="club"] {
+    color: #00FF00;
+    font-weight: bold;
+}
+
+/* Console output suit colors */
+#console .suit-heart,
+#console .suit-diamond {
+    color: #FF0000;
+}
+
+#console .suit-spade,
+#console .suit-club {
+    color: #00FF00;
+}
+
+/* Ensure visibility on different backgrounds */
+.dark-theme .suit-heart,
+.dark-theme .suit-diamond {
+    color: #FF0000;
+    text-shadow: 0 0 2px rgba(255, 0, 0, 0.5);
+}
+
+.dark-theme .suit-spade,
+.dark-theme .suit-club {
+    color: #00FF00;
+    text-shadow: 0 0 2px rgba(0, 255, 0, 0.5);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .suit-heart,
+    .suit-diamond {
+        color: #FF0000;
+        font-weight: 900;
+    }
+    
+    .suit-spade,
+    .suit-club {
+        color: #00FF00;
+        font-weight: 900;
+    }
+}
+
+/* Print styles */
+@media print {
+    .suit-heart::after,
+    .suit-diamond::after {
+        content: ' (Red)';
+        color: #000;
+        font-size: 0.8em;
+    }
+    
+    .suit-spade::after,
+    .suit-club::after {
+        content: ' (Green)';
+        color: #000;
+        font-size: 0.8em;
+    }
+} 

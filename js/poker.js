@@ -1,4 +1,4 @@
-;(function(window, Utils) {
+; (function (window, Utils) {
     'use strict';
 
     function Level(level, symbol, aliases) {
@@ -7,7 +7,7 @@
         this.aliases = Array.from(Array.prototype.slice.call(arguments, 2));
     }
 
-    Level.prototype.is = function(alias) {
+    Level.prototype.is = function (alias) {
         var arr = this.aliases.filter(a => a == alias);
         return arr != null && arr.length > 0;
     };
@@ -37,21 +37,21 @@
 
     var TYPES = {
         BLANK: new Type("BLANK", "_"),
-        DIAMOND: new Type("DIAMOND", "_"),
-        CLUB: new Type("CLUB", "_"),
-        SPADE: new Type("SPADE", "_"),
-        HEART: new Type("HEART", "_")
+        DIAMOND: new Type("DIAMOND", "♦"),
+        CLUB: new Type("CLUB", "♣"),
+        SPADE: new Type("SPADE", "♠"),
+        HEART: new Type("HEART", "♥")
     };
 
     function Poker(type, level) {
-        if (Utils.isEmpty(type) || Utils.isEmpty(level)) 
+        if (Utils.isEmpty(type) || Utils.isEmpty(level))
             throw new Error("Type or level must not null.");
 
         this.type = type;
         this.level = level;
     };
 
-    Poker.prototype.toString = function() {
+    Poker.prototype.toString = function () {
         var s = "<code>";
         s += "┌─┐\n";
         s += "│";
@@ -65,7 +65,7 @@
         return s;
     };
 
-    Poker.isVaildAlias = function(alias) {
+    Poker.isVaildAlias = function (alias) {
         for (var a in LEVELS) {
             if (LEVELS[a].is(alias)) return true;
         }
@@ -73,16 +73,16 @@
         return false;
     };
 
-    Poker.toString = function(pokers) {
+    Poker.toString = function (pokers) {
         if (!Array.isArray(pokers)) {
             return new Poker(pokers).toString();
         }
 
         var s = "<code>";
 
-        if(! window.pockerStyle || window.pockerStyle == 1){
+        if (!window.pockerStyle || window.pockerStyle == 1) {
             for (var i in pokers) {
-            s += i == 0 ? "┌─┐" : "─┐";
+                s += i == 0 ? "┌─┐" : "─┐";
             }
             s += "\n";
 
@@ -94,14 +94,22 @@
 
             for (var i in pokers) {
                 if (i == 0) s += "│";
-                s += TYPES[pokers[i].type].symbol + " │";
+                var suitSymbol = TYPES[pokers[i].type].symbol;
+                var suitClass = "";
+                if (pokers[i].type === "HEART" || pokers[i].type === "DIAMOND") {
+                    suitClass = "poker-suit-red";
+                } else if (pokers[i].type === "SPADE" || pokers[i].type === "CLUB") {
+                    suitClass = "poker-suit-green";
+                }
+                s += suitClass ? `<span class="${suitClass}">${suitSymbol}</span>` : suitSymbol;
+                s += " │";
             }
             s += "\n";
 
             for (var i in pokers) {
                 s += i == 0 ? "└─┘" : "─┘";
             }
-        }else{
+        } else {
             for (var i in pokers) {
                 s += LEVELS[pokers[i].level].symbol + " "
             }
@@ -112,4 +120,4 @@
     };
 
     window.Poker = Poker;
-} (this, this.Utils));
+}(this, this.Utils));

@@ -402,7 +402,7 @@
               line = line.replace(/([♠♥♦♣]\w+)/g, '[$1]');
             }
             // 公共牌
-            else if (line.includes('Board:')) {
+            else if (line.includes('Board:') || line.includes('board:')) {
               messageType = 'info';
               line = line.replace(/([♠♥♦♣]\w+)/g, '[$1]');
             }
@@ -788,11 +788,15 @@
     lineElement.className = `output-line ${type}`;
 
     // 如果包含扑克牌符号，使用innerHTML来支持样式
-    if (line.includes('[♠') || line.includes('[♥') || line.includes('[♦') || line.includes('[♣')) {
-      // 为不同花色的牌添加不同颜色
+    if (line.includes('♠') || line.includes('♥') || line.includes('♦') || line.includes('♣')) {
+      // 为不同花色的牌添加不同颜色 - 统一颜色规范
       let styledLine = line
-        .replace(/\[([♠♣]\w+)\]/g, '<span style="color: #00ff41; font-weight: bold;">$1</span>')  // 黑桃和梅花 - 使用终端绿色
-        .replace(/\[([♥♦]\w+)\]/g, '<span style="color: #ff4444; font-weight: bold;">$1</span>'); // 红心和方块 - 保持红色
+        // 处理带方括号的扑克牌
+        .replace(/\[([♠♣]\w+)\]/g, '<span style="color: #00FF00; font-weight: bold;">$1</span>')  // 黑桃和梅花 - 绿色
+        .replace(/\[([♥♦]\w+)\]/g, '<span style="color: #FF0000; font-weight: bold;">$1</span>')  // 红心和方块 - 红色
+        // 处理不带方括号的扑克牌
+        .replace(/([♠♣])(\w+)/g, '<span style="color: #00FF00; font-weight: bold;">$1$2</span>')  // 黑桃和梅花 - 绿色
+        .replace(/([♥♦])(\w+)/g, '<span style="color: #FF0000; font-weight: bold;">$1$2</span>'); // 红心和方块 - 红色
       lineElement.innerHTML = styledLine;
     } else {
       lineElement.textContent = line;
