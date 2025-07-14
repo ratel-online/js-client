@@ -7,6 +7,7 @@
     <link rel="icon" href="favicons/favicon-ts.png" type="image/png">
     <link rel="stylesheet" href="css/modern-terminal.css?v=20250712-1740">
     <link rel="stylesheet" href="libs/font-awesome-4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/circular-layout.css?v=20250712-1800">
 </head>
 <body>
     <div class="terminal-container">
@@ -91,6 +92,64 @@
         </div>
     </div>
     
+    <!-- Circular Seat Layout -->
+    <div class="circular-layout-container" id="circular-layout-container" style="display: none;">
+        <div class="layout-header">
+            <div class="room-info-display">
+                <span class="room-label">Room #</span><span id="room-number">--</span>
+                <span class="separator">|</span>
+                <span class="players-label">Players:</span> <span id="players-count">0/10</span>
+            </div>
+            <div class="layout-controls">
+                <button class="layout-btn" id="refresh-layout" title="Refresh Layout">
+                    <i class="fa fa-refresh"></i>
+                </button>
+                <button class="layout-btn" id="toggle-layout" title="Toggle Layout">
+                    <i class="fa fa-compress"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="circular-layout-wrapper">
+            <div class="circular-layout" id="circular-layout">
+                <!-- Center area for pot and community cards -->
+                <div class="center-area">
+                    <div class="pot-display">
+                        <div class="pot-label">POT</div>
+                        <div class="pot-amount" id="pot-amount">$0</div>
+                    </div>
+                    <div class="community-cards" id="community-cards">
+                        <!-- Community cards will be added here -->
+                    </div>
+                    <div class="game-stage" id="game-stage">Waiting...</div>
+                </div>
+                
+                <!-- Player seats will be dynamically added here -->
+            </div>
+        </div>
+        
+        <!-- Game actions panel -->
+        <div class="game-actions-panel" id="game-actions-panel" style="display: none;">
+            <div class="action-info">
+                <span class="action-label">Current Bet:</span> <span id="current-bet">$0</span>
+                <span class="separator">|</span>
+                <span class="action-label">Your Turn</span>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn fold-btn" data-action="fold">Fold</button>
+                <button class="action-btn check-btn" data-action="check">Check</button>
+                <button class="action-btn call-btn" data-action="call">Call $<span id="call-amount">0</span></button>
+                <button class="action-btn raise-btn" data-action="raise">Raise</button>
+                <button class="action-btn allin-btn" data-action="allin">All In</button>
+            </div>
+            <div class="raise-controls" id="raise-controls" style="display: none;">
+                <input type="range" class="raise-slider" id="raise-slider" min="0" max="1000" value="0">
+                <input type="number" class="raise-input" id="raise-input" min="0" max="1000" value="0">
+                <button class="confirm-raise-btn" id="confirm-raise">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         // 定义开发环境变量，避免未定义错误
         if (typeof __RATEL_IS_DEVELOPMENT__ === 'undefined') {
@@ -137,5 +196,6 @@
         }
     </script>
     <script type="text/javascript" src="js/modern-terminal.js?v=20250712-1740"></script>
+    <script type="text/javascript" src="js/circular-layout.js?v=20250712-1800"></script>
 </body>
 </html>
