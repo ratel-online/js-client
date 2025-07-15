@@ -1,4 +1,4 @@
-;(function(window, Utils, Handler, ClientEventCodes, ServerEventCodes) {
+; (function (window, Utils, Handler, ClientEventCodes, ServerEventCodes) {
     'use strict';
 
     function ShowOptionsPvpEventHandler() {
@@ -8,23 +8,39 @@
     Utils.extend(ShowOptionsPvpEventHandler, Handler);
 
     var tips = "PVP: \n" +
-            "1. Create Room\n" +
-            "2. Room List\n" +
-            "3. Join Room\n" +
-            "4. Spectate Game\n" +
-            "Please select an option above (enter [back|b] to return to options list)";
+        "1. Create Room\n" +
+        "2. Room List\n" +
+        "3. Join Room\n" +
+        "4. Spectate Game\n" +
+        "Please select an option above (enter [back|b] to return to options list)";
 
-    ShowOptionsPvpEventHandler.prototype.handle = function(client, panel, clientTransferData) {
+    ShowOptionsPvpEventHandler.prototype.handle = function (client, panel, clientTransferData) {
         panel.append(tips);
-        panel.waitInput()
-            .then(s => optionChooseResolve(client, panel, s));
+
+        // 检查是否有自动操作设置
+        const autoAction = localStorage.getItem('ratel_auto_pvp_action');
+        if (autoAction) {
+            setTimeout(() => {
+                panel.append("<div style='color: #2196F3;'>🎮 自动执行上次操作: " + autoAction + "</div>");
+                optionChooseResolve(client, panel, autoAction);
+            }, 500);
+        } else {
+            panel.waitInput()
+                .then(s => {
+                    // 保存用户选择
+                    if (s && !isNaN(parseInt(s))) {
+                        localStorage.setItem('ratel_auto_pvp_action', s);
+                    }
+                    optionChooseResolve(client, panel, s);
+                });
+        }
     };
 
     function optionChooseResolve(client, panel, s) {
         var i = s.toLowerCase();
 
         if (i == "back" || i == "b") {
-            client.dispatch({code: ClientEventCodes.CODE_SHOW_OPTIONS, data: null, info: null});
+            client.dispatch({ code: ClientEventCodes.CODE_SHOW_OPTIONS, data: null, info: null });
             return;
         }
 
@@ -36,6 +52,7 @@
         } catch (e) {
             panel.append("Invalid option, please choose again：");
             panel.waitInput().then((s) => optionChooseResolve(client, panel, s));
+            return;
         }
 
         if (i == 1) {
@@ -62,6 +79,7 @@
         } catch (ex) {
             panel.append("Invalid option, please choose again：");
             panel.waitInput().then((s) => joinRoomResolve(client, panel, s));
+            return;
         }
 
         if (j < 1) {
@@ -81,6 +99,7 @@
         } catch (e) {
             panel.append("Invalid option, please choose again：");
             panel.waitInput().then((s) => watchResolve(client, panel, s));
+            return;
         }
 
         if (i < 1) {
@@ -95,4 +114,4 @@
         window._handlers_ = [];
     }
     window._handlers_.push(new ShowOptionsPvpEventHandler());
-} (this, this.Utils, this.Handler, this.ClientEventCodes, this.ServerEventCodes));
+}(this, this.Utils, this.Handler, this.ClientEventCodes, this.ServerEventCodes));
