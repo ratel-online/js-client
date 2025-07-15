@@ -20,8 +20,8 @@
 		// 心跳机制相关属性
 		this.heartbeatInterval = null;
 		this.heartbeatTimeout = null;
-		this.heartbeatDelay = 30000; // 30秒发送一次心跳
-		this.heartbeatTimeoutDelay = 10000; // 10秒心跳超时
+		this.heartbeatDelay = 10000; // 30秒发送一次心跳
+		this.heartbeatTimeoutDelay = 5000; // 10秒心跳超时
 		this.lastHeartbeatTime = null;
 
 		// 连接状态管理
