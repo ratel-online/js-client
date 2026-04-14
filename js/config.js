@@ -4,9 +4,9 @@
  */
 window.RatelConfig = {
     // 服务器地址，格式：host:port:name[version]
-    serverAddress: "__RATEL_SERVER_ADDRESS__",
+    serverAddress: "game.isnico.com:9998:Nico[v50]",
     // WebSocket 地址，格式：ws://host:port/ws 或 wss://host:port/ws
-    wsAddress: "__RATEL_WS_ADDRESS__",
+    wsAddress: "ws://game.isnico.com:9998/ws",
     // 是否为开发环境
     isDevelopment: typeof __RATEL_IS_DEVELOPMENT__ !== 'undefined' ? __RATEL_IS_DEVELOPMENT__ : true
 }; 
