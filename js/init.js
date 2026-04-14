@@ -1,17 +1,27 @@
 ; (function (window, Utils) {
     'use strict';
 
-    const defaultServerAddress = "192.252.182.94:9998:Nico[v50]"
+    const defaultServerAddress = "game.isnico.com:9998:Nico[v50]"
 
     function Server(s) {
-        var arr = Server.pattern.exec(s);
-        this.host = arr[1];
-        this.port = parseInt(arr[2]);
-        if (arr[3]) this.name = arr[3];
-        if (arr[4]) this.version = parseInt(arr[4].replace(/\./g, ""));
+        var parts = s.split(":");
+        this.host = parts[0];
+        this.port = parseInt(parts[1], 10);
+        if (parts.length > 2) {
+            var rest = parts.slice(2).join(":");
+            var bracket = rest.indexOf("[");
+            if (bracket !== -1 && rest.charAt(rest.length - 1) === "]") {
+                this.name = rest.slice(0, bracket);
+                var verStr = rest.slice(bracket + 1, -1);
+                if (verStr.charAt(0) === "v" || verStr.charAt(0) === "V") {
+                    verStr = verStr.slice(1);
+                }
+                this.version = parseInt(verStr.replace(/\./g, ""), 10);
+            } else {
+                this.name = rest;
+            }
+        }
     }
-
-    Server.pattern = /([\w\.\-]+):(\d+)(?::(\w+))?(?:\[v(\w+)\])?/;
 
     Server.prototype.compareVersion = function (otherVersion) {
         if (otherVersion.startsWith("v") || otherVersion.startsWith("V")) {
