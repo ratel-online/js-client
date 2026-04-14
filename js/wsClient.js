@@ -16,6 +16,34 @@
 		this.reconnectAttempts = 0;
 		this.maxReconnectAttempts = 3;
 		this.reconnectDelay = 2000;
+
+		// 心跳机制相关属性
+		this.heartbeatInterval = null;
+		this.heartbeatTimeout = null;
+		this.heartbeatDelay = 10000; // 30秒发送一次心跳
+		this.heartbeatTimeoutDelay = 5000; // 10秒心跳超时
+		this.lastHeartbeatTime = null;
+
+		// 连接状态管理
+		this.connectionState = 'disconnected'; // disconnected, connecting, connected, reconnecting
+		this.lastGameState = null; // 保存游戏状态用于断线重连
+
+		// 操作缓存队列
+		this.operationQueue = [];
+		this.maxQueueSize = 50;
+
+		// 初始化连接状态显示
+		if (window.ConnectionStatus) {
+			this.connectionStatusDisplay = new window.ConnectionStatus();
+		}
+
+		// 初始化网络监控
+		if (window.NetworkMonitor) {
+			this.networkMonitor = new window.NetworkMonitor();
+			this.networkMonitor.addListener((event, data) => {
+				this.handleNetworkEvent(event, data);
+			});
+		}
 	}
 
 	WsClient.version = "1.0.0";
@@ -80,6 +108,13 @@
 	};
 
 	WsClient.prototype.updateConnectionStatus = function (status, text) {
+		// 使用新的连接状态组件
+		if (this.connectionStatusDisplay) {
+			this.connectionStatusDisplay.update(status, text);
+			return;
+		}
+
+		// 保留原有的状态更新逻辑作为备用
 		var statusIcon = document.getElementById('status-icon');
 		var statusText = document.getElementById('status-text');
 		if (statusIcon && statusText) {
@@ -188,7 +223,12 @@
 				this.panel.append("<div style='color: #666; margin-bottom: 10px;'>服务器地址: " + this.url + "</div>");
 
 				// 更新连接状态
+				this.connectionState = 'connected';
+				this.reconnectAttempts = 0; // 重置重连次数
 				// this.updateConnectionStatus('connected', '已连接');
+
+				// 启动心跳机制
+				this.startHeartbeat();
 
 				this.socket.send(JSON.stringify({
 					data: JSON.stringify({
@@ -197,6 +237,10 @@
 						Score: 100
 					})
 				}))
+
+				// 如果有缓存的操作，执行它们
+				this.flushOperationQueue();
+
 				resolve();
 			};
 			this.socket.onclose = (e) => {
@@ -205,11 +249,24 @@
 				this.panel.append("<div style='color: #f44336; font-weight: bold;'>❌ WebSocket 连接已断开</div>");
 				this.panel.append("<div style='color: #666; font-size: 12px;'>关闭代码: " + e.code + ", 原因: " + (e.reason || "未知") + "</div>");
 
+				// 停止心跳
+				this.stopHeartbeat();
+
 				// 更新连接状态
+				this.connectionState = 'disconnected';
 				// this.updateConnectionStatus('disconnected', '已断开');
+
+				// 保存当前游戏状态
+				this.saveGameState();
 
 				// 如果不是正常关闭，尝试重连
 				if (e.code !== 1000 && e.code !== 1001) {
+					// 1006 错误特殊处理
+					if (e.code === 1006) {
+						this.panel.append("<div style='color: #ff9800; font-weight: bold;'>⚠️ 网络连接异常断开，正在准备重新连接...</div>");
+						this.panel.append("<div style='color: #666; font-size: 12px;'>可能的原因：网络不稳定、服务器重启或防火墙阻断</div>");
+					}
+					this.connectionState = 'reconnecting';
 					this.reconnect()
 						.then(() => resolve())
 						.catch(() => reject(e));
@@ -230,10 +287,15 @@
 				}
 				this.panel.append("<div style='color: #ff9800; margin-top: 10px;'>💡 提示：请检查控制台（F12）获取更多错误信息</div>");
 
+				// 停止心跳
+				this.stopHeartbeat();
+
 				// 更新连接状态
+				this.connectionState = 'error';
 				// this.updateConnectionStatus('error', '连接错误');
 
 				// 尝试重连
+				this.connectionState = 'reconnecting';
 				this.reconnect()
 					.then(() => resolve())
 					.catch(() => reject(e));
@@ -302,6 +364,160 @@
 				this.initWebsocketConnect(resolve, reject);
 			}, this.reconnectDelay);
 		});
+	};
+
+	// 心跳机制实现
+	WsClient.prototype.startHeartbeat = function () {
+		this.stopHeartbeat(); // 确保清理之前的心跳
+
+		this.heartbeatInterval = setInterval(() => {
+			if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+				const heartbeatStartTime = new Date().getTime();
+
+				// 发送心跳包
+				this.socket.send(JSON.stringify({
+					type: 'heartbeat',
+					timestamp: heartbeatStartTime
+				}));
+
+				// 设置心跳超时检测
+				this.heartbeatTimeout = setTimeout(() => {
+					log.warn("Heartbeat timeout, connection may be lost");
+					this.panel.append("<div style='color: #ff9800;'>⚠️ 网络延迟较高，连接可能不稳定</div>");
+					// 如果心跳超时，主动关闭连接触发重连
+					if (this.socket) {
+						this.socket.close(4000, "Heartbeat timeout");
+					}
+				}, this.heartbeatTimeoutDelay);
+
+				// 保存心跳发送时间用于计算延迟
+				this.lastHeartbeatTime = heartbeatStartTime;
+			}
+		}, this.heartbeatDelay);
+	};
+
+	WsClient.prototype.stopHeartbeat = function () {
+		if (this.heartbeatInterval) {
+			clearInterval(this.heartbeatInterval);
+			this.heartbeatInterval = null;
+		}
+		if (this.heartbeatTimeout) {
+			clearTimeout(this.heartbeatTimeout);
+			this.heartbeatTimeout = null;
+		}
+	};
+
+	// 保存游戏状态
+	WsClient.prototype.saveGameState = function () {
+		this.lastGameState = {
+			clientId: this.game.clientId,
+			user: JSON.parse(JSON.stringify(this.game.user)),
+			room: JSON.parse(JSON.stringify(this.game.room)),
+			timestamp: new Date().getTime()
+		};
+
+		// 保存到 localStorage 以防页面刷新
+		try {
+			localStorage.setItem('ratel_game_state', JSON.stringify(this.lastGameState));
+		} catch (e) {
+			log.warn("Failed to save game state to localStorage", e);
+		}
+	};
+
+	// 恢复游戏状态
+	WsClient.prototype.restoreGameState = function () {
+		// 首先尝试从内存恢复
+		if (this.lastGameState) {
+			this.game.clientId = this.lastGameState.clientId;
+			this.game.user = this.lastGameState.user;
+			this.game.room = this.lastGameState.room;
+			this.panel.append("<div style='color: #4CAF50;'>✅ 游戏状态已恢复</div>");
+			return true;
+		}
+
+		// 尝试从 localStorage 恢复
+		try {
+			const savedState = localStorage.getItem('ratel_game_state');
+			if (savedState) {
+				const state = JSON.parse(savedState);
+				// 检查状态是否过期（超过5分钟）
+				if (new Date().getTime() - state.timestamp < 5 * 60 * 1000) {
+					this.lastGameState = state;
+					this.game.clientId = state.clientId;
+					this.game.user = state.user;
+					this.game.room = state.room;
+					this.panel.append("<div style='color: #4CAF50;'>✅ 从本地存储恢复游戏状态</div>");
+					return true;
+				}
+			}
+		} catch (e) {
+			log.warn("Failed to restore game state from localStorage", e);
+		}
+
+		return false;
+	};
+
+	// 操作队列管理
+	WsClient.prototype.queueOperation = function (operation) {
+		if (this.operationQueue.length >= this.maxQueueSize) {
+			this.operationQueue.shift(); // 移除最旧的操作
+		}
+		this.operationQueue.push({
+			operation: operation,
+			timestamp: new Date().getTime()
+		});
+	};
+
+	WsClient.prototype.flushOperationQueue = function () {
+		if (this.operationQueue.length > 0) {
+			this.panel.append("<div style='color: #2196F3;'>📤 正在执行缓存的操作...</div>");
+
+			// 执行所有缓存的操作
+			while (this.operationQueue.length > 0) {
+				const item = this.operationQueue.shift();
+				try {
+					item.operation();
+				} catch (e) {
+					log.error("Failed to execute queued operation", e);
+				}
+			}
+		}
+	};
+
+	// 增强的发送方法，支持离线缓存
+	WsClient.prototype.sendWithCache = function (code, data, info) {
+		if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+			this.send(code, data, info);
+		} else {
+			// 缓存操作
+			this.queueOperation(() => {
+				this.send(code, data, info);
+			});
+			this.panel.append("<div style='color: #ff9800;'>⏳ 操作已缓存，将在重连后执行</div>");
+		}
+	};
+
+	// 处理网络事件
+	WsClient.prototype.handleNetworkEvent = function (event, data) {
+		switch (event) {
+			case 'online':
+				this.panel.append("<div style='color: #4CAF50;'>✅ 网络已恢复</div>");
+				// 如果之前断开了，尝试重连
+				if (this.connectionState === 'disconnected' || this.connectionState === 'error') {
+					this.reconnect();
+				}
+				break;
+			case 'offline':
+				this.panel.append("<div style='color: #f44336;'>❌ 网络已断开</div>");
+				break;
+			case 'qualitychange':
+				const qualityInfo = this.networkMonitor.getQualityInfo();
+				if (data === 'poor') {
+					this.panel.append("<div style='color: " + qualityInfo.color + ";'>" +
+						qualityInfo.icon + " " + qualityInfo.text + "，可能影响游戏体验</div>");
+				}
+				break;
+		}
 	};
 
 	// --------------- getter/setter ------------------------
